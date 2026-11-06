@@ -7,6 +7,7 @@ import {
 } from "./auth.repository.js";
 
 import { AppError } from "../../shared/errors/app-error.js";
+import { generateAccessToken } from "../../shared/utils/jwt.js";
 
 const SALT_ROUNDS = 12;
 
@@ -41,4 +42,31 @@ export async function registerUser({ username, email, password }) {
     }
     throw error;
   }
+}
+
+export async function loginUser({ email, password }) {
+  const user = await findUserByEmail(email);
+
+  // Use the same message for both cases to avoid revealing
+  // whether an email address is registered
+  if (!user) {
+    throw new AppError("Invalid email or password", 401);
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+  if (!isPasswordValid) {
+    throw new AppError("Invalid email or password", 401);
+  }
+
+  const accessToken = generateAccessToken(user);
+
+  return {
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    },
+    accessToken,
+  };
 }
