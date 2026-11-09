@@ -3,11 +3,13 @@ import cors from "cors";
 import healthRoutes from "./modules/health/health.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import userRoutes from "./modules/users/users.routes.js";
+import { requestLogger } from "./shared/middleware/request-logger.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
 
 const app = express();
 
 // Global middlewares
+app.use(requestLogger);
 app.use(cors());
 app.use(express.json());
 
