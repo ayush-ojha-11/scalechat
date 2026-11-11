@@ -3,6 +3,7 @@ import cors from "cors";
 import healthRoutes from "./modules/health/health.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import userRoutes from "./modules/users/users.routes.js";
+import conversationRoutes from "./modules/conversations/conversations.routes.js";
 import { requestLogger } from "./shared/middleware/request-logger.middleware.js";
 import { errorHandler } from "./shared/middleware/error.middleware.js";
 
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/health", healthRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/conversations", conversationRoutes);
 
 // Error middleware should be registered after all routes
 app.use(errorHandler);
