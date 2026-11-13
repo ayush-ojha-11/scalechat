@@ -58,3 +58,86 @@ export async function findOrCreateDirectConversation({
     client.release();
   }
 }
+
+export async function findUserConversations({ userId, cursor, limit }) {
+  const query = ` SELECT
+      c.id,
+      c.type,
+      c.created_at,
+      c.created_by,
+
+      COALESCE(
+        latest_message.created_at,
+        c.updated_at,
+        c.created_at
+      ) AS last_activity_at,
+
+      participants.users AS participants,
+
+      latest_message.id AS last_message_id,
+      latest_message.content AS last_message_content,
+      latest_message.sender_id AS last_message_sender_id,
+      latest_message.created_at AS last_message_created_at
+
+    FROM conversations c
+
+    INNER JOIN conversation_participants current_participant
+      ON current_participant.conversation_id = c.id
+      AND current_participant.user_id = $1
+
+    LEFT JOIN LATERAL (
+      SELECT
+        m.id,
+        m.content,
+        m.sender_id,
+        m.created_at
+      FROM messages m
+      WHERE m.conversation_id = c.id
+      ORDER BY m.created_at DESC, m.id DESC
+      LIMIT 1
+    ) latest_message ON TRUE
+
+    LEFT JOIN LATERAL (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', u.id,
+          'username', u.username
+        )
+      ) AS users
+      FROM conversation_participants cp
+      INNER JOIN users u ON u.id = cp.user_id
+      WHERE cp.conversation_id = c.id
+        AND cp.user_id != $1
+    ) participants ON TRUE
+
+    WHERE
+      (
+        $2::timestamptz IS NULL
+        OR (
+          COALESCE(
+            latest_message.created_at,
+            c.updated_at,
+            c.created_at
+          ),
+          c.id
+        ) < ($2::timestamptz, $3::uuid)
+      )
+
+    ORDER BY last_activity_at DESC, c.id DESC
+    LIMIT $4`;
+
+  const result = await pool.query(query, [
+    userId,
+    cursor?.lastActivityAt ?? null,
+    cursor?.conversationId ?? null,
+    limit + 1,
+  ]);
+
+  const hasMore = result.rows.length > limit;
+  const conversations = result.rows.slice(0, limit);
+
+  return {
+    conversations,
+    hasMore,
+  };
+}
