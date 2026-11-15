@@ -1,6 +1,9 @@
 import { Router } from "express";
-import { createDirect } from "./conversations.controller.js";
-import { createDirectConversationSchema } from "./conversations.validation.js";
+import { createDirect, listConversations } from "./conversations.controller.js";
+import {
+  createDirectConversationSchema,
+  listConversationsSchema,
+} from "./conversations.validation.js";
 import { validate } from "../../shared/middleware/validate.middleware.js";
 import { authenticate } from "../../shared/middleware/authenticate.middleware.js";
 
@@ -11,6 +14,13 @@ router.post(
   authenticate,
   validate(createDirectConversationSchema),
   createDirect,
+);
+
+router.get(
+  "/",
+  authenticate,
+  validate(listConversationsSchema, "query"),
+  listConversations,
 );
 
 export default router;

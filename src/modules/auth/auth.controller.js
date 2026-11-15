@@ -6,7 +6,7 @@ import {
 } from "./auth.service.js";
 export async function register(req, res, next) {
   try {
-    const user = await registerUser(req.body);
+    const user = await registerUser(req.validated.body);
 
     return res.status(201).json({
       success: true,
@@ -22,7 +22,7 @@ export async function register(req, res, next) {
 
 export async function login(req, res, next) {
   try {
-    const result = await loginUser(req.body);
+    const result = await loginUser(req.validated.body);
 
     return res.status(200).json({
       success: true,
@@ -36,7 +36,7 @@ export async function login(req, res, next) {
 
 export async function refresh(req, res, next) {
   try {
-    const result = await refreshAccessToken(req.body.refreshToken);
+    const result = await refreshAccessToken(req.validated.body.refreshToken);
     return res.status(200).json({
       success: true,
       message: "Token refreshed successfully",
@@ -49,7 +49,7 @@ export async function refresh(req, res, next) {
 
 export async function logout(req, res, next) {
   try {
-    await logoutUser(req.body.refreshToken);
+    await logoutUser(req.validated.body.refreshToken);
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
