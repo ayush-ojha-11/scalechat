@@ -1,4 +1,4 @@
-# ScaleChat 💬
+# ScaleChat
 
 A scalable chat backend built with **Node.js, Express.js, and PostgreSQL**, following a modular monolith architecture.
 
