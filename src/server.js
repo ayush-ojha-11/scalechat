@@ -3,8 +3,13 @@ import app from "./app.js";
 import { env } from "./config/env.js";
 import { pool } from "./infrastructure/database/index.js";
 import { logger } from "./shared/utils/logger.js";
+import { initializeSocketServer } from "./infrastructure/realtime/socket.js";
 
 const httpServer = createServer(app);
+
+// Attach Socket.IO to the existing server
+const io = initializeSocketServer(httpServer);
+
 const SHUTDOWN_TIMEOUT = 10000;
 
 let isShuttingDown = false;
@@ -27,6 +32,9 @@ function shutdown(signal) {
   }, SHUTDOWN_TIMEOUT);
 
   forceShutdown.unref();
+
+  // Close Socket.IO connections first
+  io.close();
 
   httpServer.close(async (error) => {
     try {
