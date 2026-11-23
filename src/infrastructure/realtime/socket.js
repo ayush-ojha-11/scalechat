@@ -3,7 +3,11 @@ import { verifyAccessToken } from "../../shared/utils/jwt.js";
 import { logger } from "../../shared/utils/logger.js";
 import { z } from "zod";
 import { canAccessConversation } from "../../modules/messages/messages.service.js";
-import { sendMessage } from "../../modules/messages/messages.service.js";
+import {
+  sendMessage,
+  markMessageDelivered,
+  markConversationMessagesRead,
+} from "../../modules/messages/messages.service.js";
 import { AppError } from "../../shared/errors/app-error.js";
 
 export function initializeSocketServer(httpServer) {
@@ -221,6 +225,125 @@ export function initializeSocketServer(httpServer) {
         username: socket.data.user.username,
         isTyping: false,
       });
+    });
+
+    socket.on("message:delivered", async (payload, acknowledge) => {
+      const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+
+      const result = z
+        .object({
+          messageId: z.string().uuid(),
+        })
+        .safeParse(payload);
+
+      if (!result.success) {
+        return reply({
+          success: false,
+          message: "Invalid message ID",
+        });
+      }
+
+      const { messageId } = result.data;
+      try {
+        const receipt = await markMessageDelivered({
+          messageId,
+          userId: socket.data.user.id,
+        });
+
+        if (!receipt) {
+          return reply({
+            success: false,
+            message: "Delivery receipt not found or already processed",
+          });
+        }
+
+        const room = `conversation:${receipt.conversation_id}`;
+
+        // Notify conversation participants about delivery
+        io.to(room).emit("message:status", {
+          messageId: receipt.message_id,
+          userId: receipt.user_id,
+          status: "delivered",
+          deliveredAt: receipt.delivered_at,
+        });
+
+        return reply({
+          success: true,
+          message: "Message marked as delivered",
+        });
+      } catch (error) {
+        logger.error(
+          { error, messageId },
+          "Failed to mark message as delivered",
+        );
+
+        return reply({
+          success: false,
+          message: "Unable to update delivery status",
+        });
+      }
+    });
+
+    socket.on("conversation:read", async (payload, acknowledge) => {
+      const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+
+      const result = z
+        .object({
+          conversationId: z.string().uuid(),
+        })
+        .safeParse(payload);
+
+      if (!result.success) {
+        return reply({
+          success: false,
+          message: "Invalid conversation ID",
+        });
+      }
+
+      const { conversationId } = result.data;
+      const room = `conversation:${conversationId}`;
+
+      // The user must have joined this conversation
+      if (!socket.rooms.has(room)) {
+        return reply({
+          success: false,
+          message: "Join the conversation first",
+        });
+      }
+
+      try {
+        const receipts = await markConversationMessagesRead({
+          conversationId,
+          userId: socket.data.user.id,
+        });
+
+        if (receipts.length > 0) {
+          io.to(room).emit("messages:read", {
+            conversationId,
+            userId: socket.data.user.id,
+            messageIds: receipts.map((receipt) => receipt.message_id),
+            readAt: receipts[0].read_at,
+          });
+        }
+
+        return reply({
+          success: true,
+          message: "Conversation messages marked as read",
+          data: {
+            updatedCount: receipts.length,
+          },
+        });
+      } catch (error) {
+        logger.error(
+          { error, conversationId },
+          "Failed to mark conversation messages as read",
+        );
+
+        return reply({
+          success: false,
+          message: "Unable to mark messages as read",
+        });
+      }
     });
 
     socket.on("disconnect", (reason) => {

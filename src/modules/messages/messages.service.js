@@ -4,6 +4,8 @@ import {
   isConversationParticipant,
   createMessage,
   getConversationMessages,
+  markMessageDelivered as markMessageDeliveredRepository,
+  markConversationMessagesRead as markConversationMessagesReadRepository,
 } from "./messages.repository.js";
 
 import {
@@ -80,4 +82,15 @@ export async function getMessages({
 
 export async function canAccessConversation({ conversationId, userId }) {
   return isConversationParticipant({ conversationId, userId });
+}
+
+export async function markMessageDelivered({ messageId, userId }) {
+  return markMessageDeliveredRepository({ messageId, userId });
+}
+
+export async function markConversationMessagesRead({ conversationId, userId }) {
+  return markConversationMessagesReadRepository({
+    conversationId,
+    userId,
+  });
 }

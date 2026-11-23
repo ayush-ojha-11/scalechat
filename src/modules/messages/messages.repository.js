@@ -12,24 +12,56 @@ export async function isConversationParticipant({ conversationId, userId }) {
 }
 
 export async function createMessage({ conversationId, senderId, content }) {
-  const result = await pool.query(
-    `
-        INSERT INTO messages (
-        conversation_id,
-        sender_id,
-        content) VALUES ($1, $2, $3)
-        RETURNING
-        id,
-        conversation_id,
-        sender_id,
-        content,
-        created_at,
-        updated_at
-        `,
-    [conversationId, senderId, content],
-  );
+  const client = await pool.connect();
 
-  return result.rows[0];
+  try {
+    await client.query("BEGIN");
+
+    // 1. Save the message
+    const messageResult = await client.query(
+      `
+       INSERT INTO messages (
+          conversation_id,
+          sender_id,
+          content
+        )
+        VALUES ($1, $2, $3)
+        RETURNING
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          created_at,
+          updated_at
+      `,
+      [conversationId, senderId, content],
+    );
+
+    const message = messageResult.rows[0];
+
+    // 2. create receipt record for participants of conversation
+    await client.query(
+      `
+      INSERT INTO message_receipts (
+          message_id,
+          user_id
+        )
+        SELECT $1, cp.user_id
+        FROM conversation_participants cp
+        WHERE cp.conversation_id = $2
+          AND cp.user_id <> $3
+        `,
+      [message.id, conversationId, senderId],
+    );
+
+    await client.query("COMMIT");
+    return message;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getConversationMessages({
@@ -72,4 +104,51 @@ export async function getConversationMessages({
     messages,
     hasMore,
   };
+}
+
+export async function markMessageDelivered({ messageId, userId }) {
+  const result = await pool.query(
+    `
+     UPDATE message_receipts mr
+      SET delivered_at = NOW()
+      FROM messages m
+      WHERE mr.message_id = $1
+        AND mr.user_id = $2
+        AND mr.delivered_at IS NULL
+        AND m.id = mr.message_id
+      RETURNING
+        mr.message_id,
+        mr.user_id,
+        mr.delivered_at,
+        m.conversation_id
+    `,
+    [messageId, userId],
+  );
+
+  return result.rows[0] || null;
+}
+
+export async function markConversationMessagesRead({ conversationId, userId }) {
+  const result = await pool.query(
+    `
+  UPDATE message_receipts mr
+      SET
+        delivered_at = COALESCE(mr.delivered_at, NOW()),
+        read_at = NOW()
+      FROM messages m
+      WHERE mr.message_id = m.id
+        AND m.conversation_id = $1
+        AND mr.user_id = $2
+        AND mr.read_at IS NULL
+      RETURNING
+        mr.message_id,
+        mr.user_id,
+        mr.read_at,
+        m.sender_id,
+        m.conversation_id
+  `,
+    [conversationId, userId],
+  );
+
+  return result.rows;
 }

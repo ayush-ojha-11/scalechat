@@ -3,11 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ScaleChat - Socket.IO Test</title>
+    <title>ScaleChat - Real-time Chat Demo</title>
 
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 
     <style>
+      :root {
+        --bg: #0b1120;
+        --panel: #111827;
+        --panel-light: #1f2937;
+        --border: #374151;
+        --text: #f9fafb;
+        --muted: #9ca3af;
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --green: #22c55e;
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -15,384 +27,943 @@
       body {
         margin: 0;
         padding: 24px;
-        font-family: Arial, sans-serif;
-        background: #111827;
-        color: #f9fafb;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, Arial, sans-serif;
       }
 
-      .container {
-        max-width: 1100px;
-        margin: auto;
+      button,
+      input {
+        font: inherit;
       }
 
-      h1 {
-        margin-top: 0;
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 15px;
+        background: var(--primary);
+        color: white;
+        cursor: pointer;
+        transition: 0.2s;
       }
 
-      .users {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 20px;
+      button:hover {
+        background: var(--primary-hover);
       }
 
-      .card {
-        padding: 20px;
-        background: #1f2937;
-        border: 1px solid #374151;
-        border-radius: 12px;
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       input {
         width: 100%;
-        padding: 11px;
-        margin: 7px 0 12px;
-        border: 1px solid #4b5563;
-        border-radius: 6px;
-        background: #111827;
-        color: white;
+        padding: 12px;
+        background: #0b1120;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        outline: none;
       }
 
-      button {
-        padding: 10px 14px;
-        margin: 4px 3px 4px 0;
-        border: 0;
-        border-radius: 6px;
-        background: #6366f1;
-        color: white;
-        cursor: pointer;
+      input:focus {
+        border-color: var(--primary);
       }
 
-      button:hover {
-        background: #4f46e5;
+      .app {
+        max-width: 1250px;
+        margin: auto;
       }
 
-      button.danger {
-        background: #dc2626;
+      .header {
+        margin-bottom: 24px;
       }
 
-      button.secondary {
-        background: #4b5563;
+      .header h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
       }
 
-      .status {
-        margin: 12px 0;
+      .header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .setup {
+        padding: 18px;
+        margin-bottom: 22px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+
+      .setup h3 {
+        margin-top: 0;
+      }
+
+      .setup-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .conversation-field {
+        margin-top: 10px;
+      }
+
+      .chat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .chat-card {
+        min-width: 0;
+        overflow: hidden;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
+
+      .chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: var(--panel-light);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .avatar {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #3730a3;
         font-weight: bold;
       }
 
-      .connected {
+      .user-name {
+        font-weight: bold;
+      }
+
+      .user-status {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .online {
         color: #4ade80;
       }
 
-      .disconnected {
+      .offline {
         color: #f87171;
       }
 
-      .typing {
-        min-height: 22px;
-        margin: 10px 0;
-        color: #a5b4fc;
-        font-style: italic;
+      .chat-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .small-btn {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .disconnect-btn {
+        background: #991b1b;
+      }
+
+      .disconnect-btn:hover {
+        background: #b91c1c;
       }
 
       .messages {
-        height: 250px;
+        height: 390px;
         overflow-y: auto;
-        padding: 12px;
-        margin-top: 12px;
-        border-radius: 8px;
-        background: #111827;
+        padding: 18px 14px;
+        background:
+          radial-gradient(circle at 20% 20%, #1f293733 0, transparent 35%),
+          #0b1120;
       }
 
-      .message {
+      .empty-state {
+        height: 100%;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .message-row {
+        display: flex;
         margin-bottom: 12px;
-        padding: 9px;
-        background: #374151;
-        border-radius: 7px;
+      }
+
+      .message-row.own {
+        justify-content: flex-end;
+      }
+
+      .bubble {
+        max-width: 82%;
+        min-width: 80px;
+        padding: 10px 12px 7px;
+        background: #273449;
+        border-radius: 12px 12px 12px 3px;
         overflow-wrap: anywhere;
       }
 
-      .message small {
-        display: block;
-        margin-top: 5px;
-        color: #9ca3af;
+      .message-row.own .bubble {
+        background: #3730a3;
+        border-radius: 12px 12px 3px 12px;
       }
 
-      .logs {
+      .message-content {
+        font-size: 14px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .message-meta {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+        margin-top: 5px;
+        color: #c7d2fe;
+        font-size: 10px;
+      }
+
+      .message-status {
+        font-size: 11px;
+      }
+
+      .message-status.read {
+        color: #67e8f9;
+      }
+
+      .typing-indicator {
+        height: 25px;
+        padding: 3px 14px;
+        color: #a5b4fc;
+        font-size: 12px;
+        font-style: italic;
+        background: #0b1120;
+      }
+
+      .composer {
+        display: flex;
+        gap: 10px;
+        padding: 14px;
+        background: var(--panel-light);
+        border-top: 1px solid var(--border);
+      }
+
+      .composer input {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .send-btn {
+        min-width: 75px;
+      }
+
+      .composer input:disabled,
+      .composer button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .instructions {
+        margin-top: 22px;
+        padding: 18px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+
+      .instructions h3 {
+        margin-top: 0;
+      }
+
+      .instructions ol {
+        padding-left: 20px;
+        color: #d1d5db;
+        line-height: 1.9;
+        font-size: 13px;
+      }
+
+      details {
         margin-top: 20px;
         padding: 15px;
         background: #030712;
+        border: 1px solid var(--border);
         border-radius: 10px;
+      }
+
+      summary {
+        cursor: pointer;
+        font-weight: bold;
       }
 
       #eventLogs {
         max-height: 250px;
         overflow-y: auto;
+        margin-top: 14px;
+        color: #d1d5db;
         font-family: monospace;
-        font-size: 12px;
-        white-space: pre-wrap;
+        font-size: 11px;
+        line-height: 1.7;
         overflow-wrap: anywhere;
       }
 
-      @media (max-width: 750px) {
-        .users {
+      .log-entry {
+        padding: 5px 0;
+        border-bottom: 1px solid #1f2937;
+      }
+
+      @media (max-width: 850px) {
+        body {
+          padding: 14px;
+        }
+
+        .chat-grid {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 550px) {
+        .setup-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .chat-header {
+          align-items: flex-start;
+          gap: 10px;
+          flex-direction: column;
+        }
+
+        .messages {
+          height: 330px;
         }
       }
     </style>
   </head>
 
   <body>
-    <div class="container">
-      <h1>ScaleChat Socket.IO Test</h1>
-      <p>Test real-time messaging between two authenticated users.</p>
+    <main class="app">
+      <header class="header">
+        <h1>ScaleChat</h1>
+        <p>
+          Real-time messaging demonstration using Node.js, Express and
+          Socket.IO.
+        </p>
+      </header>
 
-      <section class="card" style="margin-bottom: 20px">
-        <label for="conversationId">Conversation ID</label>
-        <input
-          id="conversationId"
-          type="text"
-          value="becec58b-03d4-4338-81d0-a819f5f7c1ff"
-        />
+      <!-- CONNECTION SETUP -->
+      <section class="setup">
+        <h3>Connect your users</h3>
+
+        <div class="setup-grid">
+          <div class="field">
+            <label for="tokenA">User A access token</label>
+            <input
+              id="tokenA"
+              type="password"
+              placeholder="Paste User A JWT access token"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="field">
+            <label for="tokenB">User B access token</label>
+            <input
+              id="tokenB"
+              type="password"
+              placeholder="Paste User B JWT access token"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <div class="field conversation-field">
+          <label for="conversationId">Conversation ID</label>
+          <input
+            id="conversationId"
+            type="text"
+            value="becec58b-03d4-4338-81d0-a819f5f7c1ff"
+            readonly
+          />
+        </div>
       </section>
 
-      <div class="users">
+      <!-- CHAT WINDOWS -->
+      <section class="chat-grid">
         <!-- USER A -->
-        <section class="card">
-          <h2>User A</h2>
+        <article class="chat-card">
+          <header class="chat-header">
+            <div class="user-info">
+              <div class="avatar">A</div>
 
-          <label for="tokenA">Access Token</label>
-          <input
-            id="tokenA"
-            type="password"
-            placeholder="Paste User A access token"
-          />
+              <div>
+                <div class="user-name">User A</div>
+                <div class="user-status offline" id="statusA">Disconnected</div>
+              </div>
+            </div>
 
-          <div class="status disconnected" id="statusA">Disconnected</div>
+            <div class="chat-actions">
+              <button class="small-btn" id="connectA">Connect</button>
 
-          <button id="connectA">Connect</button>
-          <button id="disconnectA" class="danger">Disconnect</button>
+              <button
+                class="small-btn disconnect-btn"
+                id="disconnectA"
+                disabled
+              >
+                Disconnect
+              </button>
+            </div>
+          </header>
 
-          <hr style="border-color: #374151; margin: 20px 0" />
+          <div class="messages" id="messagesA">
+            <div class="empty-state">
+              Connect User A and join the conversation to start chatting.
+            </div>
+          </div>
 
-          <h3>Conversation</h3>
-          <button id="joinA">Join Conversation</button>
+          <div class="typing-indicator" id="typingA"></div>
 
-          <input
-            id="messageA"
-            type="text"
-            placeholder="Write a message..."
-            autocomplete="off"
-          />
+          <div class="composer">
+            <input
+              id="messageA"
+              type="text"
+              placeholder="Write a message..."
+              autocomplete="off"
+              disabled
+            />
 
-          <button id="sendA">Send Message</button>
-
-          <div class="typing" id="typingA"></div>
-
-          <div class="messages" id="messagesA"></div>
-        </section>
+            <button class="send-btn" id="sendA" disabled>Send</button>
+          </div>
+        </article>
 
         <!-- USER B -->
-        <section class="card">
-          <h2>User B</h2>
+        <article class="chat-card">
+          <header class="chat-header">
+            <div class="user-info">
+              <div class="avatar" style="background: #065f46">B</div>
 
-          <label for="tokenB">Access Token</label>
-          <input
-            id="tokenB"
-            type="password"
-            placeholder="Paste User B access token"
-          />
+              <div>
+                <div class="user-name">User B</div>
+                <div class="user-status offline" id="statusB">Disconnected</div>
+              </div>
+            </div>
 
-          <div class="status disconnected" id="statusB">Disconnected</div>
+            <div class="chat-actions">
+              <button class="small-btn" id="connectB">Connect</button>
 
-          <button id="connectB">Connect</button>
-          <button id="disconnectB" class="danger">Disconnect</button>
+              <button
+                class="small-btn disconnect-btn"
+                id="disconnectB"
+                disabled
+              >
+                Disconnect
+              </button>
+            </div>
+          </header>
 
-          <hr style="border-color: #374151; margin: 20px 0" />
+          <div class="messages" id="messagesB">
+            <div class="empty-state">
+              Connect User B and join the conversation to start chatting.
+            </div>
+          </div>
 
-          <h3>Conversation</h3>
-          <button id="joinB">Join Conversation</button>
+          <div class="typing-indicator" id="typingB"></div>
 
-          <input
-            id="messageB"
-            type="text"
-            placeholder="Write a message..."
-            autocomplete="off"
-          />
+          <div class="composer">
+            <input
+              id="messageB"
+              type="text"
+              placeholder="Write a message..."
+              autocomplete="off"
+              disabled
+            />
 
-          <button id="sendB">Send Message</button>
-
-          <div class="typing" id="typingB"></div>
-
-          <div class="messages" id="messagesB"></div>
-        </section>
-      </div>
-
-      <section class="logs">
-        <h3>Event Logs</h3>
-        <button id="clearLogs" class="secondary">Clear Logs</button>
-        <div id="eventLogs"></div>
+            <button class="send-btn" id="sendB" disabled>Send</button>
+          </div>
+        </article>
       </section>
-    </div>
+
+      <!-- LEARNING GUIDE -->
+      <section class="instructions">
+        <h3>How to use this demo</h3>
+
+        <ol>
+          <li>
+            Log in as two different users through your ScaleChat REST API.
+          </li>
+          <li>
+            Copy each user's access token into the respective field above.
+          </li>
+          <li>
+            Click Connect for both users. They automatically join the prefilled
+            conversation.
+          </li>
+          <li>
+            Send a message from User A and watch it appear in User B's chat.
+          </li>
+          <li>
+            Start typing in either chat and observe the other user's typing
+            indicator.
+          </li>
+          <li>
+            Watch the message status change from Sent to Delivered and Read.
+          </li>
+          <li>
+            Try disconnecting one user to observe the connection behaviour.
+          </li>
+        </ol>
+
+        <p style="color: var(--muted); font-size: 12px">
+          Tip: Keep both chat windows visible so you can observe events on both
+          sides.
+        </p>
+      </section>
+
+      <!-- DEBUG LOGS -->
+      <details>
+        <summary>Developer event logs</summary>
+
+        <button id="clearLogs" class="small-btn" style="margin-top: 12px">
+          Clear logs
+        </button>
+
+        <div id="eventLogs"></div>
+      </details>
+    </main>
 
     <script>
+      // ==========================================
+      // CONFIGURATION
+      // ==========================================
+
       const SERVER_URL = "http://localhost:4000";
 
       const TYPING_STOP_DELAY = 1000;
 
+      const CONVERSATION_ID = "becec58b-03d4-4338-81d0-a819f5f7c1ff";
+
+      // ==========================================
+      // SOCKET AND CLIENT STATE
+      // ==========================================
+
       let userASocket = null;
       let userBSocket = null;
 
-      const typingTimers = {
-        A: null,
-        B: null,
+      const users = {
+        A: {
+          socket: null,
+          joined: false,
+          typing: false,
+          typingTimer: null,
+        },
+        B: {
+          socket: null,
+          joined: false,
+          typing: false,
+          typingTimer: null,
+        },
       };
 
-      const isTyping = {
-        A: false,
-        B: false,
+      // Track messages rendered in each chat.
+      // This also lets us update message delivery/read indicators.
+      const renderedMessages = {
+        A: new Map(),
+        B: new Map(),
       };
 
       const $ = (id) => document.getElementById(id);
 
-      function log(message, data = "") {
+      // ==========================================
+      // GENERAL HELPERS
+      // ==========================================
+
+      function getSocket(user) {
+        return users[user].socket;
+      }
+
+      function getConversationId() {
+        return CONVERSATION_ID;
+      }
+
+      function log(message, data = null) {
+        const entry = document.createElement("div");
+
+        entry.className = "log-entry";
+
         const time = new Date().toLocaleTimeString();
 
-        const entry = document.createElement("div");
-        entry.textContent = `[${time}] ${message} ${
-          data ? JSON.stringify(data) : ""
-        }`;
+        entry.textContent =
+          `[${time}] ${message}` + (data ? ` ${JSON.stringify(data)}` : "");
 
         $("eventLogs").prepend(entry);
       }
 
-      function setStatus(user, connected) {
+      function setConnectionStatus(user, connected) {
         const status = $(`status${user}`);
 
         status.textContent = connected ? "Connected" : "Disconnected";
-        status.className = `status ${connected ? "connected" : "disconnected"}`;
+        status.className = `user-status ${connected ? "online" : "offline"}`;
+
+        $(`connect${user}`).disabled = connected;
+        $(`disconnect${user}`).disabled = !connected;
       }
 
-      function getConversationId() {
-        return $("conversationId").value.trim();
+      function updateChatAvailability(user) {
+        const canChat =
+          Boolean(getSocket(user)?.connected) && users[user].joined;
+
+        $(`message${user}`).disabled = !canChat;
+        $(`send${user}`).disabled = !canChat;
       }
 
-      function addMessage(user, message) {
+      function scrollToBottom(user) {
         const container = $(`messages${user}`);
-
-        const element = document.createElement("div");
-        element.className = "message";
-
-        const content = document.createElement("div");
-        content.textContent = message.content;
-
-        const details = document.createElement("small");
-        details.textContent = `Sender: ${message.sender_id} | ${message.created_at || ""}`;
-
-        element.append(content, details);
-        container.appendChild(element);
         container.scrollTop = container.scrollHeight;
       }
 
-      function getSocket(user) {
-        return user === "A" ? userASocket : userBSocket;
+      function clearEmptyState(user) {
+        const container = $(`messages${user}`);
+        const emptyState = container.querySelector(".empty-state");
+
+        if (emptyState) {
+          emptyState.remove();
+        }
       }
+
+      // ==========================================
+      // MESSAGE RENDERING
+      // ==========================================
+
+      function formatTime(date) {
+        return new Date(date).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function addMessage(user, message, isOwnMessage = false) {
+        const container = $(`messages${user}`);
+
+        clearEmptyState(user);
+
+        // Prevent duplicate messages.
+        if (renderedMessages[user].has(message.id)) {
+          return;
+        }
+
+        const row = document.createElement("div");
+        row.className = `message-row ${isOwnMessage ? "own" : ""}`;
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+
+        const content = document.createElement("div");
+        content.className = "message-content";
+        content.textContent = message.content;
+
+        const meta = document.createElement("div");
+        meta.className = "message-meta";
+
+        const time = document.createElement("span");
+        time.textContent = formatTime(message.created_at || new Date());
+
+        meta.appendChild(time);
+
+        let statusElement = null;
+
+        if (isOwnMessage) {
+          statusElement = document.createElement("span");
+          statusElement.className = "message-status";
+          statusElement.textContent = "✓ Sent";
+
+          meta.appendChild(statusElement);
+        }
+
+        bubble.append(content, meta);
+        row.appendChild(bubble);
+        container.appendChild(row);
+
+        renderedMessages[user].set(message.id, {
+          row,
+          statusElement,
+          isOwnMessage,
+        });
+
+        scrollToBottom(user);
+      }
+
+      function updateMessageStatus(user, messageId, status) {
+        const message = renderedMessages[user].get(messageId);
+
+        if (!message || !message.statusElement) return;
+
+        const element = message.statusElement;
+
+        if (status === "delivered") {
+          element.textContent = "✓✓ Delivered";
+          element.className = "message-status";
+        }
+
+        if (status === "read") {
+          element.textContent = "✓✓ Read";
+          element.className = "message-status read";
+        }
+      }
+
+      // ==========================================
+      // TYPING INDICATORS
+      // ==========================================
 
       function emitTyping(user, event) {
         const socket = getSocket(user);
-        const conversationId = getConversationId();
 
-        if (!socket?.connected || !conversationId) return;
+        if (!socket?.connected || !users[user].joined) return;
 
-        socket.emit(event, { conversationId });
+        socket.emit(event, {
+          conversationId: getConversationId(),
+        });
+
         log(`User ${user} emitted ${event}`);
       }
 
       function stopTyping(user) {
-        clearTimeout(typingTimers[user]);
+        clearTimeout(users[user].typingTimer);
 
-        if (!isTyping[user]) return;
+        if (!users[user].typing) return;
 
-        isTyping[user] = false;
+        users[user].typing = false;
+
         emitTyping(user, "typing:stop");
       }
 
       function handleTyping(user) {
-        const socket = getSocket(user);
+        if (!users[user].joined || !getSocket(user)?.connected) return;
 
-        if (!socket?.connected) return;
-
-        // Notify others only when typing starts.
-        if (!isTyping[user]) {
-          isTyping[user] = true;
+        if (!users[user].typing) {
+          users[user].typing = true;
           emitTyping(user, "typing:start");
         }
 
-        // Reset the inactivity timer on every keystroke.
-        clearTimeout(typingTimers[user]);
+        clearTimeout(users[user].typingTimer);
 
-        typingTimers[user] = setTimeout(() => {
+        users[user].typingTimer = setTimeout(() => {
           stopTyping(user);
         }, TYPING_STOP_DELAY);
       }
 
-      function connectUser(user) {
-        const token = $(`token${user}`).value.trim();
+      // ==========================================
+      // DELIVERY AND READ RECEIPTS
+      // ==========================================
 
-        if (!token) {
-          alert(`Enter User ${user} access token`);
+      function acknowledgeDelivery(user, message) {
+        const socket = getSocket(user);
+
+        if (!socket?.connected) return;
+
+        socket.emit(
+          "message:delivered",
+          { messageId: message.id },
+          (response) => {
+            log(`User ${user} delivery acknowledgement`, response);
+          },
+        );
+      }
+
+      function markConversationAsRead(user) {
+        const socket = getSocket(user);
+
+        if (!socket?.connected || !users[user].joined) return;
+
+        socket.emit(
+          "conversation:read",
+          { conversationId: getConversationId() },
+          (response) => {
+            log(`User ${user} read receipt response`, response);
+          },
+        );
+      }
+
+      // ==========================================
+      // JOIN CONVERSATION
+      // ==========================================
+
+      function joinConversation(user) {
+        const socket = getSocket(user);
+
+        if (!socket?.connected) return;
+
+        socket.emit(
+          "conversation:join",
+          { conversationId: getConversationId() },
+          (response) => {
+            log(`User ${user} join response`, response);
+
+            if (!response?.success) {
+              log(`User ${user} could not join`, response);
+              return;
+            }
+
+            users[user].joined = true;
+
+            updateChatAvailability(user);
+
+            clearEmptyState(user);
+
+            markConversationAsRead(user);
+
+            log(`User ${user} joined the conversation`);
+          },
+        );
+      }
+
+      // ==========================================
+      // SEND MESSAGE
+      // ==========================================
+
+      function sendMessage(user) {
+        const socket = getSocket(user);
+        const input = $(`message${user}`);
+
+        const content = input.value.trim();
+
+        if (!socket?.connected || !users[user].joined || !content) {
           return;
         }
 
-        if (!window.io) {
-          alert(
-            "Socket.IO client failed to load. Check your internet connection.",
-          );
-          return;
-        }
+        // Stop typing as soon as the message is sent.
+        stopTyping(user);
 
-        const existingSocket = getSocket(user);
+        socket.emit(
+          "message:send",
+          {
+            conversationId: getConversationId(),
+            content,
+          },
+          (response) => {
+            log(`User ${user} send response`, response);
 
-        if (existingSocket?.connected) {
-          log(`User ${user} is already connected`);
-          return;
-        }
+            if (!response?.success) {
+              log(`Message failed for User ${user}`, response);
+              return;
+            }
 
-        const socket = io(SERVER_URL, {
-          auth: { token },
-        });
+            // Sender gets the message through the acknowledgement.
+            addMessage(user, response.data, true);
 
-        if (user === "A") {
-          userASocket = socket;
-        } else {
-          userBSocket = socket;
-        }
+            input.value = "";
+            input.focus();
+          },
+        );
+      }
 
+      // ==========================================
+      // SOCKET EVENT LISTENERS
+      // ==========================================
+
+      function registerSocketListeners(user, socket) {
+        // Connection successful.
         socket.on("connect", () => {
-          setStatus(user, true);
-          log(`User ${user} connected`, { socketId: socket.id });
+          setConnectionStatus(user, true);
+
+          log(`User ${user} connected`, {
+            socketId: socket.id,
+          });
+
+          // Automatically join the conversation.
+          joinConversation(user);
         });
 
+        // Connection error.
         socket.on("connect_error", (error) => {
           log(`User ${user} connection error`, error.message);
         });
 
+        // Disconnection.
         socket.on("disconnect", (reason) => {
-          setStatus(user, false);
-          clearTimeout(typingTimers[user]);
-          isTyping[user] = false;
+          setConnectionStatus(user, false);
+
+          users[user].joined = false;
+          users[user].typing = false;
+
+          clearTimeout(users[user].typingTimer);
+
           $(`typing${user}`).textContent = "";
+
+          updateChatAvailability(user);
+
           log(`User ${user} disconnected`, reason);
         });
 
+        // Receive a new message.
         socket.on("message:new", (message) => {
-          addMessage(user, message);
-          log(`User ${user} received message`, message);
+          log(`User ${user} received a message`, message);
+
+          addMessage(user, message, false);
+
+          // First acknowledge delivery.
+          acknowledgeDelivery(user, message);
+
+          // This demo keeps the conversation open and visible.
+          // Therefore, mark the received message as read.
+          markConversationAsRead(user);
         });
 
-        socket.on("typing:update", (data) => {
-          const typingElement = $(`typing${user}`);
+        // Receive delivery status updates.
+        socket.on("message:status", (data) => {
+          log(`User ${user} received message status`, data);
 
-          typingElement.textContent = data.isTyping
+          if (data.status === "delivered") {
+            updateMessageStatus(user, data.messageId, "delivered");
+          }
+        });
+
+        // Receive read receipt updates.
+        socket.on("messages:read", (data) => {
+          log(`User ${user} received read receipts`, data);
+
+          for (const messageId of data.messageIds || []) {
+            updateMessageStatus(user, messageId, "read");
+          }
+        });
+
+        // Receive typing updates.
+        socket.on("typing:update", (data) => {
+          // Don't display our own typing indicator.
+          if (data.userId === socket.data?.user?.id) return;
+
+          $(`typing${user}`).textContent = data.isTyping
             ? `${data.username} is typing...`
             : "";
 
@@ -400,101 +971,96 @@
         });
       }
 
-      function disconnectUser(user) {
-        stopTyping(user);
+      // ==========================================
+      // CONNECT AND DISCONNECT
+      // ==========================================
 
+      function connectUser(user) {
+        const token = $(`token${user}`).value.trim();
+
+        if (!token) {
+          alert(`Please enter User ${user}'s access token.`);
+          return;
+        }
+
+        if (!window.io) {
+          alert("Socket.IO failed to load. Check your internet connection.");
+          return;
+        }
+
+        if (getSocket(user)) {
+          if (getSocket(user).connected) return;
+
+          getSocket(user).connect();
+          return;
+        }
+
+        const socket = io(SERVER_URL, {
+          auth: { token },
+        });
+
+        users[user].socket = socket;
+
+        if (user === "A") {
+          userASocket = socket;
+        } else {
+          userBSocket = socket;
+        }
+
+        registerSocketListeners(user, socket);
+      }
+
+      function disconnectUser(user) {
         const socket = getSocket(user);
 
         if (!socket) return;
 
+        stopTyping(user);
+
         socket.disconnect();
+
+        users[user].socket = null;
+        users[user].joined = false;
 
         if (user === "A") {
           userASocket = null;
         } else {
           userBSocket = null;
         }
+
+        setConnectionStatus(user, false);
+        updateChatAvailability(user);
+
+        log(`User ${user} manually disconnected`);
       }
 
-      function joinConversation(user) {
-        const socket = getSocket(user);
-        const conversationId = getConversationId();
+      // ==========================================
+      // UI EVENTS
+      // ==========================================
 
-        if (!socket?.connected) {
-          alert(`Connect User ${user} first`);
-          return;
-        }
-
-        if (!conversationId) {
-          alert("Enter a conversation ID");
-          return;
-        }
-
-        socket.emit("conversation:join", { conversationId }, (response) => {
-          log(`User ${user} join response`, response);
-
-          if (!response?.success) {
-            alert(response?.message || "Unable to join conversation");
-          }
-        });
-      }
-
-      function sendMessage(user) {
-        const socket = getSocket(user);
-        const conversationId = getConversationId();
-        const content = $(`message${user}`).value.trim();
-
-        if (!socket?.connected) {
-          alert(`Connect User ${user} first`);
-          return;
-        }
-
-        if (!conversationId || !content) return;
-
-        // Stop typing immediately when sending.
-        stopTyping(user);
-
-        socket.emit("message:send", { conversationId, content }, (response) => {
-          log(`User ${user} send response`, response);
-
-          if (response?.success) {
-            addMessage(user, response.data);
-            $("message" + user).value = "";
-          } else {
-            alert(response?.message || "Message sending failed");
-          }
-        });
-      }
-
-      // CONNECTION CONTROLS
       $("connectA").addEventListener("click", () => connectUser("A"));
       $("connectB").addEventListener("click", () => connectUser("B"));
 
       $("disconnectA").addEventListener("click", () => disconnectUser("A"));
       $("disconnectB").addEventListener("click", () => disconnectUser("B"));
 
-      // JOIN CONVERSATION
-      $("joinA").addEventListener("click", () => joinConversation("A"));
-      $("joinB").addEventListener("click", () => joinConversation("B"));
-
-      // SEND MESSAGE
       $("sendA").addEventListener("click", () => sendMessage("A"));
       $("sendB").addEventListener("click", () => sendMessage("B"));
 
-      // AUTOMATIC TYPING DETECTION
+      // Detect actual changes in message input.
       $("messageA").addEventListener("input", () => handleTyping("A"));
       $("messageB").addEventListener("input", () => handleTyping("B"));
 
-      // Also allow sending with Enter.
+      // Enter sends a message.
       $("messageA").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           sendMessage("A");
         }
       });
 
       $("messageB").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           sendMessage("B");
         }
@@ -504,7 +1070,12 @@
         $("eventLogs").innerHTML = "";
       });
 
-      log("ScaleChat test client loaded");
+      // ==========================================
+      // INITIALIZATION
+      // ==========================================
+
+      log("ScaleChat chat demo loaded");
+      log("Conversation ID", CONVERSATION_ID);
     </script>
   </body>
 </html>
