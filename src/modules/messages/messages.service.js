@@ -77,3 +77,7 @@ export async function getMessages({
     },
   };
 }
+
+export async function canAccessConversation({ conversationId, userId }) {
+  return isConversationParticipant({ conversationId, userId });
+}

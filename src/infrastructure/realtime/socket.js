@@ -1,9 +1,23 @@
 import { Server } from "socket.io";
 import { verifyAccessToken } from "../../shared/utils/jwt.js";
 import { logger } from "../../shared/utils/logger.js";
+import { z } from "zod";
+import { canAccessConversation } from "../../modules/messages/messages.service.js";
+import { sendMessage } from "../../modules/messages/messages.service.js";
+import { AppError } from "../../shared/errors/app-error.js";
 
 export function initializeSocketServer(httpServer) {
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:5501",
+        "http://127.0.0.1:5501",
+      ],
+      methods: ["GET", "POST"],
+    },
+  });
 
   // Authenticate every incoming socket connection
   io.use((socket, next) => {
@@ -42,6 +56,172 @@ export function initializeSocketServer(httpServer) {
       },
       "Socket connected",
     );
+
+    socket.on("conversation:join", async (payload, acknowledge) => {
+      const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+      // validate incoming payload
+      const result = z
+        .object({
+          conversationId: z.string().uuid(),
+        })
+        .safeParse(payload);
+
+      if (!result.success) {
+        return reply({
+          success: false,
+          message: "Invalid conversation ID",
+        });
+      }
+      const { conversationId } = result.data;
+
+      try {
+        // verify conversation membership
+        const isParticipant = await canAccessConversation({
+          conversationId,
+          userId: socket.data.user.id,
+        });
+
+        if (!isParticipant) {
+          return reply({
+            success: false,
+            message: "Conversation not found",
+          });
+        }
+
+        // Join the authorized room
+        const room = `conversation:${conversationId}`;
+        await socket.join(room);
+        logger.info(
+          {
+            userId: socket.data.user.id,
+            conversationId,
+            socketId: socket.id,
+          },
+          "User joined conversation room",
+        );
+
+        return reply({
+          success: true,
+          message: "Joined conversation successfully",
+          data: {
+            conversationId,
+          },
+        });
+      } catch (error) {
+        logger.error({ error }, "Failed to join conversation");
+
+        return reply({
+          success: false,
+          message: "Unable to join conversation",
+        });
+      }
+    });
+
+    socket.on("message:send", async (payload, acknowledge) => {
+      const reply = typeof acknowledge === "function" ? acknowledge : () => {};
+      const schema = z.object({
+        conversationId: z.string().uuid(),
+        content: z.string().trim().min(1).max(5000),
+      });
+      const result = schema.safeParse(payload);
+
+      if (!result.success) {
+        return reply({
+          success: false,
+          message: "Invalid message payload",
+          errors: result.error.issues.map((issue) => ({
+            field: issue.path.join("."),
+            message: issue.message,
+          })),
+        });
+      }
+
+      const { conversationId, content } = result.data;
+      const room = `conversation:${conversationId}`;
+
+      //require the socket to join the conversation first
+      if (!socket.rooms.has(room)) {
+        return reply({
+          success: false,
+          message: "Join the conversation before sending messages",
+        });
+      }
+
+      try {
+        const message = await sendMessage({
+          conversationId,
+          senderId: socket.data.user.id,
+          content,
+        });
+
+        // Deliver to other sockets in this conversation room.
+        socket.to(room).emit("message:new", message);
+
+        // Confirm successful persistence to sender
+        return reply({
+          success: true,
+          message: "Message sent successfully",
+          data: message,
+        });
+      } catch (error) {
+        logger.error(
+          {
+            error,
+            userId: socket.data.user.id,
+            conversationId,
+          },
+          "Failed to send real-time message",
+        );
+
+        return reply({
+          success: false,
+          message: "Unable to send message",
+        });
+      }
+    });
+
+    socket.on("typing:start", (payload) => {
+      const result = z
+        .object({
+          conversationId: z.string().uuid(),
+        })
+        .safeParse(payload);
+
+      if (!result.success) return;
+
+      const room = `conversation:${result.data.conversationId}`;
+
+      // Only members who joined this room can broadcast typing events.
+      if (!socket.rooms.has(room)) return;
+
+      socket.to(room).emit("typing:update", {
+        conversationId: result.data.conversationId,
+        userId: socket.data.user.id,
+        username: socket.data.user.username,
+        isTyping: true,
+      });
+    });
+
+    socket.on("typing:stop", (payload) => {
+      const result = z
+        .object({
+          conversationId: z.string().uuid(),
+        })
+        .safeParse(payload);
+
+      if (!result.success) return;
+
+      const room = `conversation:${result.data.conversationId}`;
+
+      if (!socket.rooms.has(room)) return;
+
+      socket.to(room).emit("typing:update", {
+        conversationId: result.data.conversationId,
+        userId: socket.data.user.id,
+        username: socket.data.user.username,
+        isTyping: false,
+      });
+    });
 
     socket.on("disconnect", (reason) => {
       logger.info(

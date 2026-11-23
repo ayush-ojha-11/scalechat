@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScaleChat - Socket.IO Test</title>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: Arial, sans-serif;
+        background: #111827;
+        color: #f9fafb;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: auto;
+      }
+
+      h1 {
+        margin-top: 0;
+      }
+
+      .users {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        padding: 20px;
+        background: #1f2937;
+        border: 1px solid #374151;
+        border-radius: 12px;
+      }
+
+      input {
+        width: 100%;
+        padding: 11px;
+        margin: 7px 0 12px;
+        border: 1px solid #4b5563;
+        border-radius: 6px;
+        background: #111827;
+        color: white;
+      }
+
+      button {
+        padding: 10px 14px;
+        margin: 4px 3px 4px 0;
+        border: 0;
+        border-radius: 6px;
+        background: #6366f1;
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #4f46e5;
+      }
+
+      button.danger {
+        background: #dc2626;
+      }
+
+      button.secondary {
+        background: #4b5563;
+      }
+
+      .status {
+        margin: 12px 0;
+        font-weight: bold;
+      }
+
+      .connected {
+        color: #4ade80;
+      }
+
+      .disconnected {
+        color: #f87171;
+      }
+
+      .typing {
+        min-height: 22px;
+        margin: 10px 0;
+        color: #a5b4fc;
+        font-style: italic;
+      }
+
+      .messages {
+        height: 250px;
+        overflow-y: auto;
+        padding: 12px;
+        margin-top: 12px;
+        border-radius: 8px;
+        background: #111827;
+      }
+
+      .message {
+        margin-bottom: 12px;
+        padding: 9px;
+        background: #374151;
+        border-radius: 7px;
+        overflow-wrap: anywhere;
+      }
+
+      .message small {
+        display: block;
+        margin-top: 5px;
+        color: #9ca3af;
+      }
+
+      .logs {
+        margin-top: 20px;
+        padding: 15px;
+        background: #030712;
+        border-radius: 10px;
+      }
+
+      #eventLogs {
+        max-height: 250px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      @media (max-width: 750px) {
+        .users {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>ScaleChat Socket.IO Test</h1>
+      <p>Test real-time messaging between two authenticated users.</p>
+
+      <section class="card" style="margin-bottom: 20px">
+        <label for="conversationId">Conversation ID</label>
+        <input
+          id="conversationId"
+          type="text"
+          value="becec58b-03d4-4338-81d0-a819f5f7c1ff"
+        />
+      </section>
+
+      <div class="users">
+        <!-- USER A -->
+        <section class="card">
+          <h2>User A</h2>
+
+          <label for="tokenA">Access Token</label>
+          <input
+            id="tokenA"
+            type="password"
+            placeholder="Paste User A access token"
+          />
+
+          <div class="status disconnected" id="statusA">Disconnected</div>
+
+          <button id="connectA">Connect</button>
+          <button id="disconnectA" class="danger">Disconnect</button>
+
+          <hr style="border-color: #374151; margin: 20px 0" />
+
+          <h3>Conversation</h3>
+          <button id="joinA">Join Conversation</button>
+
+          <input
+            id="messageA"
+            type="text"
+            placeholder="Write a message..."
+            autocomplete="off"
+          />
+
+          <button id="sendA">Send Message</button>
+
+          <div class="typing" id="typingA"></div>
+
+          <div class="messages" id="messagesA"></div>
+        </section>
+
+        <!-- USER B -->
+        <section class="card">
+          <h2>User B</h2>
+
+          <label for="tokenB">Access Token</label>
+          <input
+            id="tokenB"
+            type="password"
+            placeholder="Paste User B access token"
+          />
+
+          <div class="status disconnected" id="statusB">Disconnected</div>
+
+          <button id="connectB">Connect</button>
+          <button id="disconnectB" class="danger">Disconnect</button>
+
+          <hr style="border-color: #374151; margin: 20px 0" />
+
+          <h3>Conversation</h3>
+          <button id="joinB">Join Conversation</button>
+
+          <input
+            id="messageB"
+            type="text"
+            placeholder="Write a message..."
+            autocomplete="off"
+          />
+
+          <button id="sendB">Send Message</button>
+
+          <div class="typing" id="typingB"></div>
+
+          <div class="messages" id="messagesB"></div>
+        </section>
+      </div>
+
+      <section class="logs">
+        <h3>Event Logs</h3>
+        <button id="clearLogs" class="secondary">Clear Logs</button>
+        <div id="eventLogs"></div>
+      </section>
+    </div>
+
+    <script>
+      const SERVER_URL = "http://localhost:4000";
+
+      const TYPING_STOP_DELAY = 1000;
+
+      let userASocket = null;
+      let userBSocket = null;
+
+      const typingTimers = {
+        A: null,
+        B: null,
+      };
+
+      const isTyping = {
+        A: false,
+        B: false,
+      };
+
+      const $ = (id) => document.getElementById(id);
+
+      function log(message, data = "") {
+        const time = new Date().toLocaleTimeString();
+
+        const entry = document.createElement("div");
+        entry.textContent = `[${time}] ${message} ${
+          data ? JSON.stringify(data) : ""
+        }`;
+
+        $("eventLogs").prepend(entry);
+      }
+
+      function setStatus(user, connected) {
+        const status = $(`status${user}`);
+
+        status.textContent = connected ? "Connected" : "Disconnected";
+        status.className = `status ${connected ? "connected" : "disconnected"}`;
+      }
+
+      function getConversationId() {
+        return $("conversationId").value.trim();
+      }
+
+      function addMessage(user, message) {
+        const container = $(`messages${user}`);
+
+        const element = document.createElement("div");
+        element.className = "message";
+
+        const content = document.createElement("div");
+        content.textContent = message.content;
+
+        const details = document.createElement("small");
+        details.textContent = `Sender: ${message.sender_id} | ${message.created_at || ""}`;
+
+        element.append(content, details);
+        container.appendChild(element);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function getSocket(user) {
+        return user === "A" ? userASocket : userBSocket;
+      }
+
+      function emitTyping(user, event) {
+        const socket = getSocket(user);
+        const conversationId = getConversationId();
+
+        if (!socket?.connected || !conversationId) return;
+
+        socket.emit(event, { conversationId });
+        log(`User ${user} emitted ${event}`);
+      }
+
+      function stopTyping(user) {
+        clearTimeout(typingTimers[user]);
+
+        if (!isTyping[user]) return;
+
+        isTyping[user] = false;
+        emitTyping(user, "typing:stop");
+      }
+
+      function handleTyping(user) {
+        const socket = getSocket(user);
+
+        if (!socket?.connected) return;
+
+        // Notify others only when typing starts.
+        if (!isTyping[user]) {
+          isTyping[user] = true;
+          emitTyping(user, "typing:start");
+        }
+
+        // Reset the inactivity timer on every keystroke.
+        clearTimeout(typingTimers[user]);
+
+        typingTimers[user] = setTimeout(() => {
+          stopTyping(user);
+        }, TYPING_STOP_DELAY);
+      }
+
+      function connectUser(user) {
+        const token = $(`token${user}`).value.trim();
+
+        if (!token) {
+          alert(`Enter User ${user} access token`);
+          return;
+        }
+
+        if (!window.io) {
+          alert(
+            "Socket.IO client failed to load. Check your internet connection.",
+          );
+          return;
+        }
+
+        const existingSocket = getSocket(user);
+
+        if (existingSocket?.connected) {
+          log(`User ${user} is already connected`);
+          return;
+        }
+
+        const socket = io(SERVER_URL, {
+          auth: { token },
+        });
+
+        if (user === "A") {
+          userASocket = socket;
+        } else {
+          userBSocket = socket;
+        }
+
+        socket.on("connect", () => {
+          setStatus(user, true);
+          log(`User ${user} connected`, { socketId: socket.id });
+        });
+
+        socket.on("connect_error", (error) => {
+          log(`User ${user} connection error`, error.message);
+        });
+
+        socket.on("disconnect", (reason) => {
+          setStatus(user, false);
+          clearTimeout(typingTimers[user]);
+          isTyping[user] = false;
+          $(`typing${user}`).textContent = "";
+          log(`User ${user} disconnected`, reason);
+        });
+
+        socket.on("message:new", (message) => {
+          addMessage(user, message);
+          log(`User ${user} received message`, message);
+        });
+
+        socket.on("typing:update", (data) => {
+          const typingElement = $(`typing${user}`);
+
+          typingElement.textContent = data.isTyping
+            ? `${data.username} is typing...`
+            : "";
+
+          log(`User ${user} received typing update`, data);
+        });
+      }
+
+      function disconnectUser(user) {
+        stopTyping(user);
+
+        const socket = getSocket(user);
+
+        if (!socket) return;
+
+        socket.disconnect();
+
+        if (user === "A") {
+          userASocket = null;
+        } else {
+          userBSocket = null;
+        }
+      }
+
+      function joinConversation(user) {
+        const socket = getSocket(user);
+        const conversationId = getConversationId();
+
+        if (!socket?.connected) {
+          alert(`Connect User ${user} first`);
+          return;
+        }
+
+        if (!conversationId) {
+          alert("Enter a conversation ID");
+          return;
+        }
+
+        socket.emit("conversation:join", { conversationId }, (response) => {
+          log(`User ${user} join response`, response);
+
+          if (!response?.success) {
+            alert(response?.message || "Unable to join conversation");
+          }
+        });
+      }
+
+      function sendMessage(user) {
+        const socket = getSocket(user);
+        const conversationId = getConversationId();
+        const content = $(`message${user}`).value.trim();
+
+        if (!socket?.connected) {
+          alert(`Connect User ${user} first`);
+          return;
+        }
+
+        if (!conversationId || !content) return;
+
+        // Stop typing immediately when sending.
+        stopTyping(user);
+
+        socket.emit("message:send", { conversationId, content }, (response) => {
+          log(`User ${user} send response`, response);
+
+          if (response?.success) {
+            addMessage(user, response.data);
+            $("message" + user).value = "";
+          } else {
+            alert(response?.message || "Message sending failed");
+          }
+        });
+      }
+
+      // CONNECTION CONTROLS
+      $("connectA").addEventListener("click", () => connectUser("A"));
+      $("connectB").addEventListener("click", () => connectUser("B"));
+
+      $("disconnectA").addEventListener("click", () => disconnectUser("A"));
+      $("disconnectB").addEventListener("click", () => disconnectUser("B"));
+
+      // JOIN CONVERSATION
+      $("joinA").addEventListener("click", () => joinConversation("A"));
+      $("joinB").addEventListener("click", () => joinConversation("B"));
+
+      // SEND MESSAGE
+      $("sendA").addEventListener("click", () => sendMessage("A"));
+      $("sendB").addEventListener("click", () => sendMessage("B"));
+
+      // AUTOMATIC TYPING DETECTION
+      $("messageA").addEventListener("input", () => handleTyping("A"));
+      $("messageB").addEventListener("input", () => handleTyping("B"));
+
+      // Also allow sending with Enter.
+      $("messageA").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendMessage("A");
+        }
+      });
+
+      $("messageB").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendMessage("B");
+        }
+      });
+
+      $("clearLogs").addEventListener("click", () => {
+        $("eventLogs").innerHTML = "";
+      });
+
+      log("ScaleChat test client loaded");
+    </script>
+  </body>
+</html>
