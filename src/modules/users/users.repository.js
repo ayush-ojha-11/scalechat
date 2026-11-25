@@ -42,3 +42,16 @@ export async function findPublicUserById(userId) {
 
   return result.rows[0] || null;
 }
+export async function updateUserLastSeen(userId) {
+  const result = await pool.query(
+    `
+    UPDATE users
+      SET last_seen_at = NOW()
+      WHERE id = $1
+      RETURNING last_seen_at
+    `,
+    [userId],
+  );
+
+  return result.rows[0] || null;
+}

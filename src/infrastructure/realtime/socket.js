@@ -8,7 +8,44 @@ import {
   markMessageDelivered,
   markConversationMessagesRead,
 } from "../../modules/messages/messages.service.js";
+import { updateUserLastSeen } from "../../modules/users/users.service.js";
 import { AppError } from "../../shared/errors/app-error.js";
+
+// Tracks active Socket.IO connections per user.
+// Key: user ID
+// Value: Set of socket IDs
+const activeConnections = new Map();
+
+// returns true when the user transitions from offline to online
+function addUserConnection(userId, socketId) {
+  let connections = activeConnections.get(userId);
+
+  if (!connections) {
+    connections = new Set();
+    activeConnections.set(userId, connections);
+  }
+
+  const wasOffline = connections.size === 0;
+  connections.add(socketId);
+
+  return wasOffline;
+}
+
+//returns true when the user transitions from online to offline
+function removeUserConnection(userId, socketId) {
+  const connections = activeConnections.get(userId);
+
+  if (!connections) return false;
+
+  connections.delete(socketId);
+
+  if (connections.size === 0) {
+    activeConnections.delete(userId);
+    return true;
+  }
+
+  return false;
+}
 
 export function initializeSocketServer(httpServer) {
   const io = new Server(httpServer, {
@@ -53,13 +90,26 @@ export function initializeSocketServer(httpServer) {
 
   // Runs after successful authentication
   io.on("connection", (socket) => {
+    // Online status management
+    const userId = socket.data.user.id;
+    const becameOnline = addUserConnection(userId, socket.id);
+
     logger.info(
       {
         socketId: socket.id,
-        userId: socket.data.user.id,
+        userId,
+        activeConnections: activeConnections.get(userId)?.size,
       },
       "Socket connected",
     );
+
+    if (becameOnline) {
+      socket.broadcast.emit("presence:update", {
+        userId,
+        status: "online",
+        lastSeenAt: null,
+      });
+    }
 
     socket.on("conversation:join", async (payload, acknowledge) => {
       const reply = typeof acknowledge === "function" ? acknowledge : () => {};
@@ -346,15 +396,35 @@ export function initializeSocketServer(httpServer) {
       }
     });
 
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", async (reason) => {
+      const becameOffline = removeUserConnection(userId, socket.id);
+
       logger.info(
         {
           socketId: socket.id,
-          userId: socket.data.user.id,
+          userId,
           reason,
+          activeConnections: activeConnections.get(userId)?.size || 0,
         },
         "Socket Disconnected",
       );
+      // Another device is still connected
+      if (!becameOffline) return;
+
+      try {
+        const result = await updateUserLastSeen(userId);
+        const lastSeenAt = result?.last_seen_at || null;
+
+        io.emit("presence:update", {
+          userId,
+          status: "offline",
+          lastSeenAt,
+        });
+
+        logger.info({ userId, lastSeenAt }, "User went offline");
+      } catch (error) {
+        logger.error({ error, userId }, "Failed to update user last seen");
+      }
     });
   });
 

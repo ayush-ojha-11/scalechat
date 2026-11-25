@@ -3,6 +3,7 @@ import {
   findUserById,
   searchUsers as searchUsersRepository,
   findPublicUserById,
+  updateUserLastSeen as updateUserLastSeenRepository,
 } from "./users.repository.js";
 
 export async function getCurrentUser(userId) {
@@ -26,4 +27,8 @@ export async function getPublicUserProfile(userId) {
     throw new AppError("User not found", 404);
   }
   return user;
+}
+
+export async function updateUserLastSeen(userId) {
+  return updateUserLastSeenRepository(userId);
 }
