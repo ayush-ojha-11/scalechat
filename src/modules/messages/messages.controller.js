@@ -1,4 +1,4 @@
-import { sendMessage, getMessages } from "./messages.service.js";
+import { sendMessage, getMessages, syncMessages } from "./messages.service.js";
 
 export async function createMessage(req, res, next) {
   try {
@@ -22,13 +22,30 @@ export async function createMessage(req, res, next) {
 
 export async function listMessages(req, res, next) {
   try {
-    const query = req.validated.query;
+    const { limit, cursor, after } = req.validated.query;
+    const { conversationId } = req.params;
+    const userId = req.user.id;
 
+    // Incremental synchronization after reconnection
+    if (after) {
+      const result = await syncMessages({
+        conversationId,
+        userId,
+        after,
+        limit,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    }
+    // older message pagination
     const result = await getMessages({
-      conversationId: req.params.conversationId,
-      userId: req.user.id,
-      limit: query.limit,
-      cursor: query.cursor,
+      conversationId,
+      userId,
+      limit,
+      cursor,
     });
 
     return res.status(200).json({

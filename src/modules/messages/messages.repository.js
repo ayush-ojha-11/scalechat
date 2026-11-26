@@ -152,3 +152,31 @@ export async function markConversationMessagesRead({ conversationId, userId }) {
 
   return result.rows;
 }
+
+export async function getMessagesAfter({ conversationId, after, limit }) {
+  const result = await pool.query(
+    `
+    SELECT
+       id,
+       conversation_id,
+       sender_id,
+       content,
+       created_at,
+       updated_at
+     FROM messages
+     WHERE conversation_id = $1
+       AND (created_at, id) > ($2::timestamptz, $3::uuid)
+     ORDER BY created_at ASC, id ASC
+     LIMIT $4
+    `,
+    [conversationId, after.createdAt, after.messageId, limit],
+  );
+
+  const hasMore = result.rows.length > limit;
+  const messages = result.rows.slice(0, limit);
+
+  return {
+    messages,
+    hasMore,
+  };
+}

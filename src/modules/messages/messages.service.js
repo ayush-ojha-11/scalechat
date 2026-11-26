@@ -6,6 +6,7 @@ import {
   getConversationMessages,
   markMessageDelivered as markMessageDeliveredRepository,
   markConversationMessagesRead as markConversationMessagesReadRepository,
+  getMessagesAfter,
 } from "./messages.repository.js";
 
 import {
@@ -93,4 +94,42 @@ export async function markConversationMessagesRead({ conversationId, userId }) {
     conversationId,
     userId,
   });
+}
+
+export async function syncMessages({
+  conversationId,
+  userId,
+  after: rawCursor,
+  limit,
+}) {
+  // A synchronization request must include its last known cursor
+  if (!rawCursor) {
+    throw new AppError("Synchronization cursor is required", 400);
+  }
+  const after = decodeMessageCursor(rawCursor);
+  if (!after) {
+    throw new AppError("Invalid synchronization cursor", 400);
+  }
+  // Never allow users to synchronize conversations
+  // they are not members of
+  const isParticipant = await isConversationParticipant({
+    conversationId,
+    userId,
+  });
+  if (!isParticipant) {
+    throw new AppError("Conversation not found", 404);
+  }
+  const result = await getMessagesAfter({ conversationId, after, limit });
+  const nextAfter = result.hasMore
+    ? encodeMessageCursor({
+        messageId: result.messages.at(-1).id,
+        createdAt: result.messages.at(-1).created_at,
+      })
+    : null;
+
+  return {
+    messages: result.messages,
+    hasMore: result.hasMore,
+    nextAfter,
+  };
 }

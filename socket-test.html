@@ -2,23 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ScaleChat — Realtime Chat Demo</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1020" />
+    <title>ScaleChat · Backend Playground</title>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0b1120;
-        --panel: #111827;
-        --panel2: #1f2937;
-        --border: #374151;
-        --text: #f9fafb;
-        --muted: #9ca3af;
-        --primary: #6366f1;
-        --green: #4ade80;
-        --red: #f87171;
-        --cyan: #67e8f9;
+        --bg: #0b1020;
+        --panel: #131c2e;
+        --panel2: #1a2740;
+        --line: #2b3952;
+        --text: #eef2ff;
+        --muted: #9aa9c0;
+        --accent: #8175ff;
+        --green: #42d99a;
+        --red: #ff8294;
+        --cyan: #72dff5;
+        --amber: #f2c66d;
       }
 
       * {
@@ -27,10 +29,15 @@
 
       body {
         margin: 0;
-        padding: 24px;
-        background: var(--bg);
+        padding: 26px;
+        background:
+          radial-gradient(ellipse at 10% 0%, #6558d51c, transparent 35%),
+          var(--bg);
         color: var(--text);
-        font-family: Inter, Arial, sans-serif;
+        font:
+          14px/1.5 Inter,
+          system-ui,
+          sans-serif;
       }
 
       button,
@@ -40,77 +47,148 @@
 
       button {
         border: 0;
-        border-radius: 8px;
+        border-radius: 10px;
         padding: 10px 14px;
-        background: var(--primary);
+        background: var(--accent);
         color: white;
+        font-weight: 650;
         cursor: pointer;
       }
 
-      button:hover {
+      button:hover:not(:disabled) {
         filter: brightness(1.12);
       }
       button:disabled {
-        opacity: 0.45;
+        opacity: 0.4;
         cursor: not-allowed;
+      }
+      button.secondary {
+        background: #26334c;
+        border: 1px solid var(--line);
+      }
+      button.danger {
+        background: #4b2632;
+        border: 1px solid #75404d;
       }
 
       input {
         width: 100%;
         min-width: 0;
         padding: 11px 12px;
+        background: #0c1424;
+        border: 1px solid var(--line);
+        border-radius: 10px;
         color: var(--text);
-        background: #0b1120;
-        border: 1px solid var(--border);
-        border-radius: 8px;
         outline: none;
       }
 
       input:focus {
-        border-color: var(--primary);
+        border-color: var(--accent);
+      }
+      input::placeholder {
+        color: #687891;
       }
 
       .app {
-        max-width: 1240px;
+        max-width: 1400px;
         margin: auto;
       }
 
-      .topbar {
-        margin-bottom: 22px;
-      }
-      .topbar h1 {
-        margin: 0 0 6px;
-        font-size: 28px;
-      }
-      .topbar p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .setup,
-      .guide,
-      details {
-        padding: 18px;
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-      }
-
-      .setup {
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
         margin-bottom: 20px;
       }
 
-      .setup h2,
-      .guide h2 {
-        margin: 0 0 14px;
-        font-size: 16px;
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
       }
 
-      .setup-grid,
-      .chat-grid {
+      .logo {
+        width: 46px;
+        height: 46px;
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        place-items: center;
+        border-radius: 14px;
+        background: linear-gradient(140deg, #988cff, #5144c8);
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .top h1 {
+        font-size: 25px;
+        margin: 0;
+      }
+      .muted,
+      .hint {
+        color: var(--muted);
+      }
+      .subtitle {
+        margin: 3px 0 0;
+        color: var(--muted);
+      }
+
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        padding: 8px 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #64748b;
+        margin-right: 6px;
+      }
+
+      .dot.good {
+        background: var(--green);
+      }
+      .dot.bad {
+        background: var(--red);
+      }
+
+      .panel {
+        background: linear-gradient(180deg, #151f32, #111a2b);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 16px 45px #0004;
+      }
+
+      .setup {
+        padding: 20px;
+        margin-bottom: 18px;
+      }
+
+      .heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+
+      .heading h2,
+      .info h2 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .hint {
+        font-size: 12px;
+        margin: 4px 0 0;
+      }
+
+      .grid2,
+      .chats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 16px;
       }
 
@@ -118,33 +196,57 @@
         display: flex;
         flex-direction: column;
         gap: 7px;
+        min-width: 0;
         margin-bottom: 12px;
       }
 
       .field label {
+        font-size: 12px;
+        color: #c5d0e1;
+        font-weight: 650;
+      }
+
+      .field small {
+        font-size: 11px;
         color: var(--muted);
+      }
+
+      .conversation {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
+        margin-top: 3px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .notice {
+        margin-top: 13px;
+        padding: 11px 13px;
+        border: 1px solid #6a542f;
+        border-radius: 10px;
+        background: #49361722;
+        color: #eed39b;
         font-size: 12px;
       }
-      .conversation-field {
-        margin: 0;
-      }
 
-      .chat-card {
-        min-width: 0;
+      .chat {
         overflow: hidden;
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 14px;
+        min-width: 0;
       }
 
-      .chat-header {
+      .chathead {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
         padding: 14px;
         background: var(--panel2);
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--line);
       }
 
       .identity {
@@ -160,192 +262,291 @@
         flex: 0 0 42px;
         display: grid;
         place-items: center;
-        border-radius: 50%;
-        background: #3730a3;
-        font-weight: 700;
+        border-radius: 13px;
+        background: linear-gradient(140deg, #8175ff, #4b3eb8);
+        font-weight: 850;
+      }
+
+      .avatar.alt {
+        background: linear-gradient(140deg, #19a899, #11655d);
       }
 
       .name {
-        font-weight: 700;
+        font-weight: 750;
+        max-width: 260px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .substatus {
-        margin-top: 4px;
+      .state,
+      .presence {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      .presence.online {
+        color: var(--green);
+      }
+      .presence.offline {
+        color: var(--red);
+      }
+
+      .chat-actions {
+        display: flex;
+        gap: 6px;
+      }
+      .chat-actions button {
+        font-size: 11px;
+        padding: 8px 10px;
+      }
+
+      .toolbar,
+      .chatfoot {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 9px 13px;
+        background: #111a2a;
         color: var(--muted);
         font-size: 11px;
       }
 
-      .online {
+      .sync.busy {
+        color: var(--amber);
+      }
+      .sync.ready {
         color: var(--green);
-      }
-      .offline {
-        color: var(--red);
-      }
-      .unknown {
-        color: var(--muted);
-      }
-
-      .header-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .small-btn {
-        padding: 8px 10px;
-        font-size: 12px;
-      }
-      .disconnect {
-        background: #991b1b;
       }
 
       .messages {
-        height: 390px;
-        overflow-y: auto;
-        padding: 16px 14px;
-        background:
-          radial-gradient(circle at 20% 20%, #1f293733 0, transparent 35%),
-          #0b1120;
+        height: 410px;
+        overflow: auto;
+        padding: 16px;
+        background: #0d1524;
+        scroll-behavior: smooth;
       }
 
-      .empty-state {
+      .empty {
         min-height: 100%;
-        display: grid;
-        place-items: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         text-align: center;
         color: var(--muted);
-        font-size: 13px;
-        padding: 20px;
+        gap: 7px;
+        padding: 24px;
       }
 
-      .message-row {
-        display: flex;
-        margin-bottom: 11px;
+      .empty b {
+        color: #e0e7f5;
       }
-      .message-row.own {
+
+      .bubble-row {
+        display: flex;
+        margin: 0 0 11px;
+      }
+      .bubble-row.own {
         justify-content: flex-end;
       }
 
       .bubble {
         max-width: 82%;
-        min-width: 76px;
+        min-width: 85px;
         padding: 9px 11px 7px;
+        border: 1px solid #35445e;
+        background: #1d2b42;
+        border-radius: 13px 13px 13px 4px;
         overflow-wrap: anywhere;
-        background: #273449;
-        border-radius: 12px 12px 12px 3px;
       }
 
-      .message-row.own .bubble {
-        background: #3730a3;
-        border-radius: 12px 12px 3px 12px;
+      .own .bubble {
+        background: #463da0;
+        border-color: #665bd0;
+        border-radius: 13px 13px 4px 13px;
       }
 
-      .message-content {
-        font-size: 14px;
-        line-height: 1.5;
+      .author {
+        font-size: 10px;
+        color: #bdc9dc;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .content {
         white-space: pre-wrap;
+        line-height: 1.5;
       }
 
-      .message-meta {
+      .meta {
         display: flex;
         justify-content: flex-end;
-        align-items: center;
         gap: 7px;
         margin-top: 5px;
-        color: #c7d2fe;
+        color: #bdc9dc;
         font-size: 10px;
       }
 
-      .message-status {
-        font-size: 10px;
-      }
-      .message-status.read {
+      .status.read {
         color: var(--cyan);
       }
 
+      .loadolder {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+
+      .loadolder button {
+        font-size: 10px;
+        padding: 6px 10px;
+        background: #1c2940;
+        border: 1px solid var(--line);
+      }
+
       .typing {
-        height: 25px;
-        padding: 4px 14px;
-        color: #a5b4fc;
-        background: #0b1120;
-        font-size: 12px;
+        min-height: 27px;
+        padding: 5px 14px;
+        background: #0d1524;
+        color: #b8adff;
+        font-size: 11px;
         font-style: italic;
       }
 
       .composer {
         display: flex;
-        gap: 9px;
-        padding: 13px;
+        gap: 8px;
+        padding: 12px;
         background: var(--panel2);
-        border-top: 1px solid var(--border);
+        border-top: 1px solid var(--line);
       }
 
       .composer input {
         flex: 1;
       }
 
-      .guide {
-        margin-top: 20px;
-      }
-
-      .guide ol {
-        margin: 0;
-        padding-left: 20px;
-        color: #d1d5db;
-        font-size: 13px;
-        line-height: 1.85;
-      }
-
-      .guide p {
-        margin: 12px 0 0;
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      details {
+      .bottom {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
         margin-top: 18px;
-        background: #030712;
       }
 
-      summary {
-        cursor: pointer;
-        font-weight: 650;
+      .info,
+      .logs {
+        padding: 17px;
+      }
+      .info h2 {
+        margin-bottom: 10px;
       }
 
-      #eventLogs {
-        max-height: 260px;
-        overflow-y: auto;
-        margin-top: 12px;
-        color: #d1d5db;
-        font: 11px/1.7 monospace;
+      .features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .features li {
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+
+      .features li:before {
+        content: "✓";
+        color: var(--green);
+        font-weight: 900;
+        margin-right: 8px;
+      }
+
+      #logs {
+        max-height: 210px;
+        overflow: auto;
+        margin-top: 10px;
+        font:
+          10px/1.7 ui-monospace,
+          monospace;
+        color: #c3cee0;
+      }
+
+      .logrow {
+        padding: 4px 0;
+        border-bottom: 1px solid #27344b;
         overflow-wrap: anywhere;
       }
 
-      .log-entry {
-        padding: 4px 0;
-        border-bottom: 1px solid #1f2937;
+      .logtime {
+        color: #7888a2;
+      }
+      .error {
+        color: #ff9aaa;
+      }
+      .success {
+        color: #83e5b3;
       }
 
-      @media (max-width: 850px) {
+      .logshead {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logshead button {
+        font-size: 10px;
+        padding: 6px 9px;
+        background: #26334c;
+      }
+
+      .footnote {
+        text-align: center;
+        color: #75839a;
+        font-size: 11px;
+        margin: 18px 0 0;
+      }
+
+      @media (max-width: 900px) {
+        .chats {
+          grid-template-columns: 1fr;
+        }
+        .messages {
+          height: 350px;
+        }
+      }
+
+      @media (max-width: 650px) {
         body {
-          padding: 14px;
+          padding: 12px;
         }
-        .chat-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 560px) {
-        .setup-grid {
-          grid-template-columns: 1fr;
-          gap: 0;
-        }
-        .chat-header {
+        .top {
           align-items: flex-start;
           flex-direction: column;
         }
-        .messages {
-          height: 330px;
+        .grid2,
+        .bottom {
+          grid-template-columns: 1fr;
+        }
+        .conversation {
+          grid-template-columns: 1fr;
+        }
+        .actions button {
+          flex: 1;
+        }
+        .chathead {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .chat-actions {
+          width: 100%;
+        }
+        .chat-actions button {
+          flex: 1;
+        }
+        .features {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -353,675 +554,1281 @@
 
   <body>
     <main class="app">
-      <header class="topbar">
-        <h1>ScaleChat</h1>
-        <p>
-          A two-user learning client for testing your Node.js, PostgreSQL and
-          Socket.IO chat backend.
-        </p>
+      <header class="top">
+        <div class="brand">
+          <div class="logo">S</div>
+          <div>
+            <h1>ScaleChat Playground</h1>
+            <p class="subtitle">
+              Test your messaging backend with two real accounts.
+            </p>
+          </div>
+        </div>
+
+        <div class="pill">
+          <span class="dot" id="healthDot"></span>
+          <span id="healthText">Checking backend…</span>
+        </div>
       </header>
 
-      <section class="setup">
-        <h2>Connection setup</h2>
-
-        <div class="setup-grid">
-          <div class="field">
-            <label for="tokenA">User A access token</label>
-            <input
-              id="tokenA"
-              type="password"
-              placeholder="Paste User A JWT access token"
-              autocomplete="off"
-            />
-          </div>
-
-          <div class="field">
-            <label for="tokenB">User B access token</label>
-            <input
-              id="tokenB"
-              type="password"
-              placeholder="Paste User B JWT access token"
-              autocomplete="off"
-            />
+      <section class="panel setup">
+        <div class="heading">
+          <div>
+            <h2>1 · Connect two accounts</h2>
+            <p class="hint">
+              Paste two different access tokens. Account usernames are read from
+              their JWTs.
+            </p>
           </div>
         </div>
 
-        <div class="field conversation-field">
-          <label for="conversationId">Conversation ID</label>
-          <input
-            id="conversationId"
-            value="becec58b-03d4-4338-81d0-a819f5f7c1ff"
-            readonly
-          />
+        <div class="grid2">
+          <div class="field">
+            <label for="tokenOne">First account · access token</label>
+            <input
+              id="tokenOne"
+              type="password"
+              autocomplete="off"
+              placeholder="Paste first JWT access token"
+            />
+            <small id="hintOne"
+              >Username and account ID appear after connection.</small
+            >
+          </div>
+
+          <div class="field">
+            <label for="tokenTwo">Second account · access token</label>
+            <input
+              id="tokenTwo"
+              type="password"
+              autocomplete="off"
+              placeholder="Paste second JWT access token"
+            />
+            <small id="hintTwo"
+              >Username and account ID appear after connection.</small
+            >
+          </div>
+        </div>
+
+        <div class="conversation">
+          <div class="field" style="margin: 0">
+            <label for="conversationId">Conversation ID</label>
+            <input
+              id="conversationId"
+              value="becec58b-03d4-4338-81d0-a819f5f7c1ff"
+            />
+            <small
+              >Both accounts must be participants in this conversation.</small
+            >
+          </div>
+
+          <div class="actions">
+            <button id="connectBoth">Connect both</button>
+            <button class="secondary" id="disconnectBoth">
+              Disconnect both
+            </button>
+          </div>
+        </div>
+
+        <div class="notice">
+          ⓘ <strong>Local development only.</strong>
+          The last synchronized message cursor is saved in this browser's
+          localStorage per account and conversation. Do not use production
+          credentials or publish this page.
         </div>
       </section>
 
-      <section class="chat-grid">
-        <!-- USER A -->
-        <article class="chat-card">
-          <header class="chat-header">
+      <section class="chats">
+        <!-- First account session -->
+        <article class="panel chat">
+          <header class="chathead">
             <div class="identity">
-              <div class="avatar">A</div>
+              <div class="avatar" id="avatarOne">?</div>
               <div>
-                <div class="name">User A</div>
-                <div class="substatus offline" id="statusA">
-                  Socket: disconnected
+                <div class="name" id="nameOne">First account</div>
+                <div class="state" id="stateOne">
+                  <span class="dot"></span>Disconnected
                 </div>
-                <div class="substatus unknown" id="peerStatusA">
-                  User B presence: unknown
+                <div class="presence" id="presenceOne">
+                  Other account: presence unknown
                 </div>
               </div>
             </div>
 
-            <div class="header-actions">
-              <button class="small-btn" id="connectA">Connect</button>
-              <button class="small-btn disconnect" id="disconnectA" disabled>
+            <div class="chat-actions">
+              <button class="secondary" id="connectOne">Connect</button>
+              <button class="danger" id="disconnectOne" disabled>
                 Disconnect
               </button>
             </div>
           </header>
 
-          <div class="messages" id="messagesA">
-            <div class="empty-state">
-              Connect User A to join the conversation and start chatting.
+          <div class="toolbar">
+            <span class="sync" id="syncOne">Waiting for connection</span>
+            <span id="countOne">0 messages</span>
+          </div>
+
+          <div class="messages" id="messagesOne">
+            <div class="empty">
+              <b>Conversation messages will appear here</b>
+              <span
+                >Connect this account to load history and synchronize missed
+                messages.</span
+              >
             </div>
           </div>
 
-          <div class="typing" id="typingA"></div>
+          <div class="typing" id="typingOne"></div>
 
           <div class="composer">
             <input
-              id="messageA"
-              placeholder="Write a message..."
-              autocomplete="off"
+              id="composeOne"
+              placeholder="Connect to send a message…"
               disabled
             />
-            <button id="sendA" disabled>Send</button>
+            <button id="sendOne" disabled>Send</button>
+          </div>
+
+          <div class="chatfoot">
+            <span id="lastSyncOne">Last sync: not yet</span>
+            <span>Enter to send</span>
           </div>
         </article>
 
-        <!-- USER B -->
-        <article class="chat-card">
-          <header class="chat-header">
+        <!-- Second account session -->
+        <article class="panel chat">
+          <header class="chathead">
             <div class="identity">
-              <div class="avatar" style="background: #065f46">B</div>
+              <div class="avatar alt" id="avatarTwo">?</div>
               <div>
-                <div class="name">User B</div>
-                <div class="substatus offline" id="statusB">
-                  Socket: disconnected
+                <div class="name" id="nameTwo">Second account</div>
+                <div class="state" id="stateTwo">
+                  <span class="dot"></span>Disconnected
                 </div>
-                <div class="substatus unknown" id="peerStatusB">
-                  User A presence: unknown
+                <div class="presence" id="presenceTwo">
+                  Other account: presence unknown
                 </div>
               </div>
             </div>
 
-            <div class="header-actions">
-              <button class="small-btn" id="connectB">Connect</button>
-              <button class="small-btn disconnect" id="disconnectB" disabled>
+            <div class="chat-actions">
+              <button class="secondary" id="connectTwo">Connect</button>
+              <button class="danger" id="disconnectTwo" disabled>
                 Disconnect
               </button>
             </div>
           </header>
 
-          <div class="messages" id="messagesB">
-            <div class="empty-state">
-              Connect User B to join the conversation and start chatting.
+          <div class="toolbar">
+            <span class="sync" id="syncTwo">Waiting for connection</span>
+            <span id="countTwo">0 messages</span>
+          </div>
+
+          <div class="messages" id="messagesTwo">
+            <div class="empty">
+              <b>Conversation messages will appear here</b>
+              <span
+                >Connect this account to load history and synchronize missed
+                messages.</span
+              >
             </div>
           </div>
 
-          <div class="typing" id="typingB"></div>
+          <div class="typing" id="typingTwo"></div>
 
           <div class="composer">
             <input
-              id="messageB"
-              placeholder="Write a message..."
-              autocomplete="off"
+              id="composeTwo"
+              placeholder="Connect to send a message…"
               disabled
             />
-            <button id="sendB" disabled>Send</button>
+            <button id="sendTwo" disabled>Send</button>
+          </div>
+
+          <div class="chatfoot">
+            <span id="lastSyncTwo">Last sync: not yet</span>
+            <span>Enter to send</span>
           </div>
         </article>
       </section>
 
-      <section class="guide">
-        <h2>How to use this demo</h2>
+      <section class="bottom">
+        <div class="panel info">
+          <h2>What you can test</h2>
+          <ul class="features">
+            <li>JWT Socket.IO authentication</li>
+            <li>Conversation room authorization</li>
+            <li>Real-time message delivery</li>
+            <li>Initial message history</li>
+            <li>Offline message synchronization</li>
+            <li>Older-message pagination</li>
+            <li>Typing indicators</li>
+            <li>Delivery and read receipts</li>
+            <li>Online/offline presence events</li>
+            <li>Reconnect and duplicate prevention</li>
+          </ul>
+        </div>
 
-        <ol>
-          <li>
-            Register or log in as two different users through the ScaleChat REST
-            API.
-          </li>
-          <li>Paste each user's access token into the matching field.</li>
-          <li>
-            Click Connect for both users. Each socket automatically joins the
-            conversation.
-          </li>
-          <li>
-            Send messages from either side. The other chat window should receive
-            them in real time.
-          </li>
-          <li>Start typing to see the other user's typing indicator.</li>
-          <li>
-            Observe delivery, read and presence events in the message status and
-            developer logs.
-          </li>
-          <li>Disconnect one user to test the presence update.</li>
-        </ol>
-
-        <p>
-          This is a local development client, not a production chat frontend.
-          Keep access tokens private and do not deploy this page.
-        </p>
+        <div class="panel logs">
+          <div class="logshead">
+            <div>
+              <h2>Developer activity</h2>
+              <p class="hint">REST, synchronization and realtime event logs.</p>
+            </div>
+            <button id="clearLogs">Clear</button>
+          </div>
+          <div id="logs"></div>
+        </div>
       </section>
 
-      <details>
-        <summary>Developer event logs</summary>
-        <button
-          class="small-btn"
-          id="clearLogs"
-          style="margin-top: 12px; background: #4b5563"
-        >
-          Clear logs
-        </button>
-        <div id="eventLogs"></div>
-      </details>
+      <p class="footnote">
+        PostgreSQL is the source of truth · REST recovers missed messages ·
+        Socket.IO delivers live events.
+      </p>
     </main>
 
     <script>
-      // Backend address and conversation used by this local test client.
-      const SERVER_URL = "http://localhost:4000";
-      const CONVERSATION_ID = "becec58b-03d4-4338-81d0-a819f5f7c1ff";
-      const TYPING_STOP_DELAY = 1000;
+      (() => {
+        "use strict";
 
-      const $ = (id) => document.getElementById(id);
+        // Change these if your local backend uses a different host or port.
+        const SERVER_URL = "http://localhost:4000";
+        const API_BASE = `${SERVER_URL}/api/v1`;
 
-      // Each panel represents one authenticated Socket.IO connection.
-      const clients = {
-        A: {
-          socket: null,
-          joined: false,
-          typing: false,
-          typingTimer: null,
-          messages: new Map(),
-          userId: null,
-        },
-        B: {
-          socket: null,
-          joined: false,
-          typing: false,
-          typingTimer: null,
-          messages: new Map(),
-          userId: null,
-        },
-      };
+        const PAGE_SIZE = 50;
+        const TYPING_DELAY = 1000;
 
-      function log(message, data = null) {
-        const entry = document.createElement("div");
-        entry.className = "log-entry";
+        const $ = (id) => document.getElementById(id);
 
-        entry.textContent =
-          `[${new Date().toLocaleTimeString()}] ${message}` +
-          (data ? " " + JSON.stringify(data) : "");
+        const sessions = {
+          one: makeSession("one"),
+          two: makeSession("two"),
+        };
 
-        $("eventLogs").prepend(entry);
-      }
+        function makeSession(key) {
+          return {
+            key,
+            socket: null,
+            token: null,
+            user: null,
+            joined: false,
+            typing: false,
+            typingTimer: null,
+            messages: new Map(),
+            olderCursor: null,
+            hasOlder: false,
+            syncCursor: null,
+            loadingOlder: false,
+            hasLoadedHistory: false,
+            peerPresence: null,
+          };
+        }
 
-      function getSocket(user) {
-        return clients[user].socket;
-      }
+        function id(session, part) {
+          return part + (session.key === "one" ? "One" : "Two");
+        }
 
-      // Decode JWT payload only to identify the peer in this demo UI.
-      // The backend remains responsible for verifying the token signature.
-      function getUserFromToken(token) {
-        try {
-          const payloadPart = token.split(".")[1];
+        function peer(session) {
+          return sessions[session.key === "one" ? "two" : "one"];
+        }
 
-          if (!payloadPart) return null;
+        function log(message, data, type = "") {
+          const row = document.createElement("div");
+          row.className = "logrow " + type;
 
-          const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+          const time = document.createElement("span");
+          time.className = "logtime";
+          time.textContent = `[${new Date().toLocaleTimeString()}] `;
 
-          const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+          const text = document.createElement("span");
+          text.textContent =
+            message + (data === undefined ? "" : " " + safe(data));
 
-          const bytes = Uint8Array.from(atob(padded), (char) =>
-            char.charCodeAt(0),
+          row.append(time, text);
+          $("logs").prepend(row);
+        }
+
+        function safe(value) {
+          try {
+            return typeof value === "string" ? value : JSON.stringify(value);
+          } catch {
+            return String(value);
+          }
+        }
+
+        // Decode JWT payload for display only.
+        // The server still verifies the JWT signature.
+        function decodeJwt(token) {
+          try {
+            const part = token.split(".")[1];
+            if (!part) return null;
+
+            const base64 = part
+              .replace(/-/g, "+")
+              .replace(/_/g, "/")
+              .padEnd(Math.ceil(part.length / 4) * 4, "=");
+
+            const bytes = Uint8Array.from(atob(base64), (char) =>
+              char.charCodeAt(0),
+            );
+            return JSON.parse(new TextDecoder().decode(bytes));
+          } catch {
+            return null;
+          }
+        }
+
+        function setIdentity(session, payload) {
+          session.user = {
+            id: payload.sub,
+            username: payload.username || null,
+            email: payload.email || null,
+          };
+
+          const name =
+            session.user.username ||
+            session.user.email ||
+            `Account ${session.user.id.slice(0, 8)}`;
+
+          $(id(session, "name")).textContent = name;
+          $(id(session, "avatar")).textContent = name[0].toUpperCase();
+
+          $("hint" + (session.key === "one" ? "One" : "Two")).textContent =
+            `${name} · account ID ${session.user.id}`;
+
+          refreshPresence();
+        }
+
+        function refreshPresence() {
+          for (const session of Object.values(sessions)) {
+            const other = peer(session);
+            const el = $(id(session, "presence"));
+            const name = other.user?.username || "Other account";
+
+            if (!session.peerPresence) {
+              el.textContent = `${name}: presence unknown`;
+              el.className = "presence";
+            } else if (session.peerPresence.status === "online") {
+              el.textContent = `${name} is online`;
+              el.className = "presence online";
+            } else {
+              const when = session.peerPresence.lastSeenAt
+                ? new Date(session.peerPresence.lastSeenAt).toLocaleString()
+                : "time unavailable";
+
+              el.textContent = `${name} was last seen ${when}`;
+              el.className = "presence offline";
+            }
+          }
+        }
+
+        function setSync(session, text, state = "") {
+          const el = $(id(session, "sync"));
+          el.textContent = text;
+          el.className = "sync " + state;
+        }
+
+        function setConnected(session, connected) {
+          $(id(session, "state")).innerHTML =
+            `<span class="dot ${connected ? "good" : "bad"}"></span>` +
+            (connected ? "Realtime connection active" : "Disconnected");
+
+          $(id(session, "connect")).disabled = connected;
+          $(id(session, "disconnect")).disabled = !connected;
+
+          updateComposer(session);
+
+          if (!connected) {
+            setSync(session, "Disconnected");
+          }
+        }
+
+        function updateComposer(session) {
+          const ready = !!(session.socket?.connected && session.joined);
+
+          $(id(session, "compose")).disabled = !ready;
+          $(id(session, "send")).disabled = !ready;
+
+          $(id(session, "compose")).placeholder = ready
+            ? "Write a message…"
+            : "Connect and join the conversation to send messages…";
+        }
+
+        function conv() {
+          return $("conversationId").value.trim();
+        }
+
+        // Store a separate synchronization cursor for each account and conversation.
+        function storageKey(session) {
+          return `scalechat:last-sync:${conv()}:${session.user.id}`;
+        }
+
+        function validCursor(cursor) {
+          return !!(
+            cursor &&
+            typeof cursor.messageId === "string" &&
+            typeof cursor.createdAt === "string" &&
+            !Number.isNaN(Date.parse(cursor.createdAt))
           );
+        }
 
-          const payload = JSON.parse(new TextDecoder().decode(bytes));
+        function readCursor(session) {
+          try {
+            const cursor = JSON.parse(
+              localStorage.getItem(storageKey(session)),
+            );
+            return validCursor(cursor) ? cursor : null;
+          } catch {
+            return null;
+          }
+        }
+
+        function cursorOf(message) {
+          if (!message?.id || !(message.created_at || message.createdAt)) {
+            return null;
+          }
 
           return {
-            id: typeof payload.sub === "string" ? payload.sub : null,
-            username:
-              typeof payload.username === "string" ? payload.username : null,
+            messageId: message.id,
+            createdAt: message.created_at || message.createdAt,
           };
-        } catch {
-          return null;
-        }
-      }
-
-      function setSocketStatus(user, connected) {
-        const el = $("status" + user);
-
-        el.textContent = connected
-          ? "Socket: connected"
-          : "Socket: disconnected";
-
-        el.className = `substatus ${connected ? "online" : "offline"}`;
-
-        $("connect" + user).disabled = connected;
-        $("disconnect" + user).disabled = !connected;
-
-        updateComposer(user);
-      }
-
-      function updateComposer(user) {
-        const ready = Boolean(
-          getSocket(user)?.connected && clients[user].joined,
-        );
-
-        $("message" + user).disabled = !ready;
-        $("send" + user).disabled = !ready;
-      }
-
-      function setPeerPresence(user, status, lastSeenAt = null) {
-        const peer = user === "A" ? "B" : "A";
-        const el = $("peerStatus" + user);
-
-        if (status === "online") {
-          el.textContent = `User ${peer} is online`;
-          el.className = "substatus online";
-        } else if (status === "offline") {
-          const lastSeen = lastSeenAt
-            ? new Date(lastSeenAt).toLocaleString()
-            : "time unavailable";
-
-          el.textContent = `User ${peer} was last seen ${lastSeen}`;
-          el.className = "substatus offline";
-        } else {
-          el.textContent = `User ${peer} presence: unknown`;
-          el.className = "substatus unknown";
-        }
-      }
-
-      function clearEmptyState(user) {
-        $("messages" + user)
-          .querySelector(".empty-state")
-          ?.remove();
-      }
-
-      function scrollToBottom(user) {
-        const el = $("messages" + user);
-        el.scrollTop = el.scrollHeight;
-      }
-
-      function addMessage(user, message, own = false) {
-        if (!message?.id || clients[user].messages.has(message.id)) {
-          return;
         }
 
-        clearEmptyState(user);
+        function compare(a, b) {
+          if (!a) return -1;
+          if (!b) return 1;
 
-        const row = document.createElement("div");
-        row.className = `message-row${own ? " own" : ""}`;
+          const x = Date.parse(a.createdAt);
+          const y = Date.parse(b.createdAt);
 
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
+          if (x !== y) return x < y ? -1 : 1;
 
-        const content = document.createElement("div");
-        content.className = "message-content";
-        content.textContent = message.content ?? "";
-
-        const meta = document.createElement("div");
-        meta.className = "message-meta";
-
-        const time = document.createElement("span");
-
-        time.textContent = new Date(
-          message.created_at || Date.now(),
-        ).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        meta.appendChild(time);
-
-        let statusElement = null;
-
-        if (own) {
-          statusElement = document.createElement("span");
-          statusElement.className = "message-status";
-          statusElement.textContent = "✓ Sent";
-          meta.appendChild(statusElement);
+          return a.messageId === b.messageId
+            ? 0
+            : a.messageId < b.messageId
+              ? -1
+              : 1;
         }
 
-        bubble.append(content, meta);
-        row.appendChild(bubble);
+        function saveCursor(session, cursor) {
+          if (!validCursor(cursor)) return;
 
-        $("messages" + user).appendChild(row);
+          session.syncCursor = cursor;
 
-        clients[user].messages.set(message.id, {
-          row,
-          statusElement,
-        });
+          try {
+            localStorage.setItem(storageKey(session), JSON.stringify(cursor));
 
-        scrollToBottom(user);
-      }
-
-      function updateMessageStatus(user, messageId, status) {
-        const message = clients[user].messages.get(messageId);
-
-        if (!message?.statusElement) return;
-
-        if (status === "delivered") {
-          message.statusElement.textContent = "✓✓ Delivered";
-          message.statusElement.className = "message-status";
-        } else if (status === "read") {
-          message.statusElement.textContent = "✓✓ Read";
-          message.statusElement.className = "message-status read";
-        }
-      }
-
-      // Emit typing:start once; reset the timer for subsequent keystrokes.
-      function emitTyping(user, eventName) {
-        const socket = getSocket(user);
-
-        if (!socket?.connected || !clients[user].joined) {
-          return;
+            $(id(session, "lastSync")).textContent =
+              `Last sync: ${new Date(cursor.createdAt).toLocaleString()}`;
+          } catch (error) {
+            log("Could not persist sync cursor", error.message, "error");
+          }
         }
 
-        socket.emit(eventName, {
-          conversationId: CONVERSATION_ID,
-        });
+        function advanceCursor(session, message) {
+          const cursor = cursorOf(message);
 
-        log(`User ${user} emitted ${eventName}`);
-      }
-
-      function stopTyping(user) {
-        clearTimeout(clients[user].typingTimer);
-
-        if (!clients[user].typing) return;
-
-        clients[user].typing = false;
-        emitTyping(user, "typing:stop");
-      }
-
-      function handleTyping(user) {
-        if (!getSocket(user)?.connected || !clients[user].joined) {
-          return;
+          if (
+            cursor &&
+            (!session.syncCursor || compare(cursor, session.syncCursor) > 0)
+          ) {
+            saveCursor(session, cursor);
+          }
         }
 
-        if (!clients[user].typing) {
-          clients[user].typing = true;
-          emitTyping(user, "typing:start");
+        // The backend's encodeMessageCursor uses base64url(JSON.stringify(cursor)).
+        function encodeCursor(cursor) {
+          const bytes = new TextEncoder().encode(JSON.stringify(cursor));
+          let binary = "";
+
+          bytes.forEach((byte) => (binary += String.fromCharCode(byte)));
+
+          return btoa(binary)
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/g, "");
         }
 
-        clearTimeout(clients[user].typingTimer);
-
-        clients[user].typingTimer = setTimeout(
-          () => stopTyping(user),
-          TYPING_STOP_DELAY,
-        );
-      }
-
-      function acknowledgeDelivery(user, message) {
-        const socket = getSocket(user);
-
-        if (!socket?.connected) return;
-
-        socket.emit(
-          "message:delivered",
-          { messageId: message.id },
-          (response) => {
-            log(`User ${user} delivery acknowledgement`, response);
-          },
-        );
-      }
-
-      // This demo treats a joined conversation as open.
-      // A real UI should only mark messages read when they are actually visible.
-      function markConversationAsRead(user) {
-        const socket = getSocket(user);
-
-        if (!socket?.connected || !clients[user].joined) {
-          return;
+        function clearEmpty(session) {
+          $(id(session, "messages")).querySelector(".empty")?.remove();
         }
 
-        socket.emit(
-          "conversation:read",
-          { conversationId: CONVERSATION_ID },
-          (response) => {
-            log(`User ${user} read receipt response`, response);
-          },
-        );
-      }
+        function empty(session, title, description) {
+          const box = document.createElement("div");
+          box.className = "empty";
 
-      function joinConversation(user) {
-        const socket = getSocket(user);
+          const heading = document.createElement("b");
+          heading.textContent = title;
 
-        if (!socket?.connected) return;
+          const text = document.createElement("span");
+          text.textContent = description;
 
-        socket.emit(
-          "conversation:join",
-          { conversationId: CONVERSATION_ID },
-          (response) => {
-            log(`User ${user} join response`, response);
-
-            if (!response?.success) {
-              log(`User ${user} failed to join`, response);
-              return;
-            }
-
-            clients[user].joined = true;
-
-            clearEmptyState(user);
-            updateComposer(user);
-            markConversationAsRead(user);
-          },
-        );
-      }
-
-      function sendMessage(user) {
-        const socket = getSocket(user);
-        const input = $("message" + user);
-        const content = input.value.trim();
-
-        if (!socket?.connected || !clients[user].joined || !content) {
-          return;
+          box.append(heading, text);
+          $(id(session, "messages")).replaceChildren(box);
         }
 
-        stopTyping(user);
+        function count(session) {
+          const total = session.messages.size;
 
-        socket.emit(
-          "message:send",
-          {
-            conversationId: CONVERSATION_ID,
-            content,
-          },
-          (response) => {
-            log(`User ${user} send response`, response);
+          $(id(session, "count")).textContent =
+            `${total} ${total === 1 ? "message" : "messages"}`;
+        }
 
-            if (!response?.success) {
-              log(`User ${user} message failed`, response);
-              return;
-            }
+        // Add a message once and keep the visible list in chronological order.
+        function addMessage(
+          session,
+          message,
+          { advance = true, preserveScroll = false } = {},
+        ) {
+          if (!message?.id || session.messages.has(message.id)) {
+            return false;
+          }
 
-            // Sender receives the saved message in the acknowledgement.
-            addMessage(user, response.data, true);
+          clearEmpty(session);
 
-            input.value = "";
-            input.focus();
-          },
-        );
-      }
+          const own = message.sender_id === session.user?.id;
 
-      function registerSocketListeners(user, socket) {
-        socket.on("connect", () => {
-          setSocketStatus(user, true);
+          const row = document.createElement("div");
+          row.className = "bubble-row" + (own ? " own" : "");
+          row.dataset.messageId = message.id;
 
-          log(`User ${user} connected`, {
-            socketId: socket.id,
+          const bubble = document.createElement("div");
+          bubble.className = "bubble";
+
+          if (!own) {
+            const author = document.createElement("div");
+            author.className = "author";
+            author.textContent =
+              peer(session).user?.username || "Conversation participant";
+
+            bubble.append(author);
+          }
+
+          const content = document.createElement("div");
+          content.className = "content";
+          content.textContent = message.content || "";
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+
+          const time = document.createElement("span");
+          time.textContent = new Date(
+            message.created_at || message.createdAt || Date.now(),
+          ).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
           });
 
-          joinConversation(user);
-        });
+          meta.append(time);
 
-        socket.on("connect_error", (error) => {
-          log(`User ${user} connection error`, error.message);
-        });
+          let status = null;
 
-        socket.on("disconnect", (reason) => {
-          clients[user].joined = false;
-          clients[user].typing = false;
-
-          clearTimeout(clients[user].typingTimer);
-
-          $("typing" + user).textContent = "";
-
-          setSocketStatus(user, false);
-
-          log(`User ${user} disconnected`, reason);
-        });
-
-        socket.on("message:new", (message) => {
-          log(`User ${user} received message`, message);
-
-          addMessage(user, message);
-
-          acknowledgeDelivery(user, message);
-          markConversationAsRead(user);
-        });
-
-        socket.on("message:status", (data) => {
-          log(`User ${user} received message status`, data);
-
-          if (data.status === "delivered") {
-            updateMessageStatus(user, data.messageId, "delivered");
+          if (own) {
+            status = document.createElement("span");
+            status.className = "status";
+            status.textContent = "✓ Sent";
+            meta.append(status);
           }
-        });
 
-        socket.on("messages:read", (data) => {
-          log(`User ${user} received read receipt update`, data);
+          bubble.append(content, meta);
+          row.append(bubble);
 
-          for (const messageId of data.messageIds || []) {
-            updateMessageStatus(user, messageId, "read");
-          }
-        });
+          const container = $(id(session, "messages"));
+          const cursor = cursorOf(message);
 
-        socket.on("typing:update", (data) => {
-          // Server uses socket.to(room), which excludes the sender.
-          $("typing" + user).textContent = data.isTyping
-            ? `${data.username} is typing...`
-            : "";
+          const before = [...container.querySelectorAll(".bubble-row")].find(
+            (el) => {
+              const oldMessage = session.messages.get(
+                el.dataset.messageId,
+              )?.message;
+              const oldCursor = cursorOf(oldMessage);
 
-          log(`User ${user} received typing update`, data);
-        });
-
-        socket.on("presence:update", (data) => {
-          log("Presence update received", data);
-
-          if (user === "A" && data.userId === clients.B.userId) {
-            setPeerPresence("A", data.status, data.lastSeenAt);
-          } else if (user === "B" && data.userId === clients.A.userId) {
-            setPeerPresence("B", data.status, data.lastSeenAt);
-          }
-        });
-      }
-
-      function connectUser(user) {
-        const token = $("token" + user).value.trim();
-
-        if (!token) {
-          alert(`Enter User ${user}'s access token first.`);
-          return;
-        }
-
-        const tokenUser = getUserFromToken(token);
-
-        if (!tokenUser?.id) {
-          alert(
-            "The access token does not contain a readable user ID (sub). " +
-              "Check that you pasted a valid ScaleChat access token.",
+              return cursor && oldCursor && compare(cursor, oldCursor) < 0;
+            },
           );
-          return;
-        }
 
-        clients[user].userId = tokenUser.id;
-
-        if (!window.io) {
-          alert(
-            "Socket.IO client did not load. Check your internet connection.",
-          );
-          return;
-        }
-
-        const existing = getSocket(user);
-
-        if (existing) {
-          if (existing.connected) return;
-
-          existing.connect();
-          return;
-        }
-
-        const socket = io(SERVER_URL, {
-          auth: { token },
-        });
-
-        clients[user].socket = socket;
-
-        registerSocketListeners(user, socket);
-      }
-
-      function disconnectUser(user) {
-        const socket = getSocket(user);
-
-        if (!socket) return;
-
-        stopTyping(user);
-        socket.disconnect();
-
-        clients[user].socket = null;
-        clients[user].joined = false;
-        clients[user].typing = false;
-
-        setSocketStatus(user, false);
-        updateComposer(user);
-
-        log(`User ${user} manually disconnected`);
-      }
-
-      // UI event handlers.
-      $("connectA").addEventListener("click", () => connectUser("A"));
-
-      $("connectB").addEventListener("click", () => connectUser("B"));
-
-      $("disconnectA").addEventListener("click", () => disconnectUser("A"));
-
-      $("disconnectB").addEventListener("click", () => disconnectUser("B"));
-
-      $("sendA").addEventListener("click", () => sendMessage("A"));
-
-      $("sendB").addEventListener("click", () => sendMessage("B"));
-
-      $("messageA").addEventListener("input", () => handleTyping("A"));
-
-      $("messageB").addEventListener("input", () => handleTyping("B"));
-
-      for (const user of ["A", "B"]) {
-        $("message" + user).addEventListener("keydown", (event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            sendMessage(user);
+          if (before) {
+            container.insertBefore(row, before);
+          } else {
+            container.append(row);
           }
+
+          session.messages.set(message.id, {
+            row,
+            status,
+            message,
+          });
+
+          count(session);
+
+          if (!preserveScroll) {
+            container.scrollTop = container.scrollHeight;
+          }
+
+          if (advance) {
+            advanceCursor(session, message);
+          }
+
+          return true;
+        }
+
+        function updateStatus(session, messageId, status) {
+          const item = session.messages.get(messageId);
+
+          if (!item?.status) return;
+
+          if (status === "delivered") {
+            item.status.textContent = "✓✓ Delivered";
+            item.status.className = "status";
+          }
+
+          if (status === "read") {
+            item.status.textContent = "✓✓ Read";
+            item.status.className = "status read";
+          }
+        }
+
+        // REST API helper.
+        async function getMessages(session, params = {}) {
+          const url = new URL(
+            `${API_BASE}/conversations/${encodeURIComponent(conv())}/messages`,
+          );
+
+          Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              url.searchParams.set(key, String(value));
+            }
+          });
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${session.token}`,
+              Accept: "application/json",
+            },
+          });
+
+          let body;
+
+          try {
+            body = await response.json();
+          } catch {
+            throw new Error(
+              `Message API returned non-JSON (HTTP ${response.status}).`,
+            );
+          }
+
+          if (!response.ok || body.success === false) {
+            throw new Error(
+              body.message ||
+                body.error ||
+                `Message request failed (HTTP ${response.status}).`,
+            );
+          }
+
+          const data = body.data ?? body;
+
+          return {
+            messages: Array.isArray(data.messages)
+              ? data.messages
+              : Array.isArray(data)
+                ? data
+                : [],
+            hasMore: !!data.hasMore,
+            nextCursor: data.nextCursor || null,
+            nextAfter: data.nextAfter || null,
+          };
+        }
+
+        function newestCursor(messages) {
+          return messages.reduce((latest, message) => {
+            const cursor = cursorOf(message);
+
+            return cursor && (!latest || compare(cursor, latest) > 0)
+              ? cursor
+              : latest;
+          }, null);
+        }
+
+        // First connection: load recent history.
+        async function initialHistory(session) {
+          setSync(session, "Loading recent history…", "busy");
+
+          const data = await getMessages(session, {
+            limit: PAGE_SIZE,
+          });
+
+          data.messages.forEach((message) => {
+            addMessage(session, message, { advance: false });
+          });
+
+          const newest = newestCursor(data.messages);
+
+          if (newest) {
+            saveCursor(session, newest);
+          }
+
+          session.olderCursor = data.nextCursor;
+          session.hasOlder = data.hasMore;
+
+          renderOlder(session);
+
+          setSync(
+            session,
+            `History loaded · ${data.messages.length} messages`,
+            "ready",
+          );
+
+          log(
+            "Initial message history loaded",
+            {
+              account: session.user.username,
+              count: data.messages.length,
+            },
+            "success",
+          );
+
+          session.hasLoadedHistory = true;
+
+          if (!data.messages.length) {
+            empty(
+              session,
+              "No messages yet",
+              "Send a message from either connected account to start this conversation.",
+            );
+          }
+        }
+
+        // Reconnect: retrieve messages created after the saved cursor.
+        async function syncAfterReconnect(session) {
+          const saved = readCursor(session);
+
+          if (!saved) {
+            await initialHistory(session);
+            return;
+          }
+
+          session.syncCursor = saved;
+
+          setSync(session, "Checking for missed messages…", "busy");
+
+          log("Starting offline synchronization", {
+            account: session.user.username,
+            after: saved,
+          });
+
+          let after = encodeCursor(saved);
+          let total = 0;
+          let latest = saved;
+          let hasMore = true;
+
+          while (hasMore) {
+            const data = await getMessages(session, {
+              after,
+              limit: PAGE_SIZE,
+            });
+
+            for (const message of data.messages) {
+              addMessage(session, message, { advance: false });
+
+              const cursor = cursorOf(message);
+
+              if (cursor && compare(cursor, latest) > 0) {
+                latest = cursor;
+              }
+            }
+
+            total += data.messages.length;
+            hasMore = data.hasMore;
+
+            if (hasMore) {
+              if (!data.nextAfter) {
+                throw new Error(
+                  "Sync API returned hasMore=true without nextAfter.",
+                );
+              }
+
+              after = data.nextAfter;
+            }
+
+            if (hasMore && !data.messages.length) {
+              throw new Error(
+                "Sync API returned an empty page while hasMore=true.",
+              );
+            }
+          }
+
+          // Do not move the cursor backwards if a live message arrived
+          // while the synchronization request was in progress.
+          if (session.syncCursor && compare(session.syncCursor, latest) > 0) {
+            latest = session.syncCursor;
+          }
+
+          if (latest) {
+            saveCursor(session, latest);
+          }
+
+          setSync(
+            session,
+            total
+              ? `Recovered ${total} missed message${total === 1 ? "" : "s"}`
+              : "Up to date · no missed messages",
+            "ready",
+          );
+
+          log(
+            "Offline synchronization completed",
+            {
+              account: session.user.username,
+              recovered: total,
+            },
+            "success",
+          );
+
+          // On a fresh browser load, the saved cursor may exist but the
+          // message list is empty. Load recent history after catching up.
+          if (!session.hasLoadedHistory) {
+            await initialHistory(session);
+          } else if (!session.messages.size) {
+            empty(
+              session,
+              "No messages yet",
+              "Send a message from either connected account to start this conversation.",
+            );
+          }
+        }
+
+        // Older-message pagination.
+        function renderOlder(session) {
+          const box = $(id(session, "messages"));
+
+          box.querySelector(".loadolder")?.remove();
+
+          if (!session.hasOlder || !session.olderCursor) return;
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "loadolder";
+
+          const button = document.createElement("button");
+          button.textContent = "Load older messages";
+          button.onclick = () => loadOlder(session);
+
+          wrapper.append(button);
+          box.prepend(wrapper);
+        }
+
+        async function loadOlder(session) {
+          if (
+            !session.hasOlder ||
+            !session.olderCursor ||
+            session.loadingOlder
+          ) {
+            return;
+          }
+
+          session.loadingOlder = true;
+
+          const box = $(id(session, "messages"));
+          const height = box.scrollHeight;
+          const top = box.scrollTop;
+
+          try {
+            const data = await getMessages(session, {
+              cursor: session.olderCursor,
+              limit: PAGE_SIZE,
+            });
+
+            data.messages.forEach((message) => {
+              addMessage(session, message, {
+                advance: false,
+                preserveScroll: true,
+              });
+            });
+
+            session.olderCursor = data.nextCursor;
+            session.hasOlder = data.hasMore;
+
+            box.scrollTop = box.scrollHeight - height + top;
+
+            log(
+              "Older history page loaded",
+              {
+                count: data.messages.length,
+              },
+              "success",
+            );
+          } catch (error) {
+            log("Could not load older messages", error.message, "error");
+          } finally {
+            session.loadingOlder = false;
+            renderOlder(session);
+          }
+        }
+
+        // Join the room first, then synchronize from REST.
+        function join(session) {
+          session.socket.emit(
+            "conversation:join",
+            { conversationId: conv() },
+            async (response) => {
+              log("Conversation join acknowledgement", response);
+
+              if (!response?.success && !response?.ok) {
+                setSync(session, "Could not join conversation");
+
+                log(
+                  "Join failed. Check membership, conversation ID and acknowledgement shape.",
+                  response,
+                  "error",
+                );
+
+                return;
+              }
+
+              session.joined = true;
+              updateComposer(session);
+
+              try {
+                await syncAfterReconnect(session);
+                renderOlder(session);
+              } catch (error) {
+                setSync(session, "Synchronization failed");
+
+                log("Message synchronization failed", error.message, "error");
+              }
+            },
+          );
+        }
+
+        // Typing indicators.
+        function stopTyping(session) {
+          clearTimeout(session.typingTimer);
+
+          if (!session.typing) return;
+
+          session.typing = false;
+
+          if (session.socket?.connected && session.joined) {
+            session.socket.emit("typing:stop", {
+              conversationId: conv(),
+            });
+          }
+        }
+
+        function typing(session) {
+          if (!session.socket?.connected || !session.joined) return;
+
+          if (!session.typing) {
+            session.typing = true;
+
+            session.socket.emit("typing:start", {
+              conversationId: conv(),
+            });
+          }
+
+          clearTimeout(session.typingTimer);
+
+          session.typingTimer = setTimeout(
+            () => stopTyping(session),
+            TYPING_DELAY,
+          );
+        }
+
+        // Send message through Socket.IO.
+        function send(session) {
+          const input = $(id(session, "compose"));
+          const content = input.value.trim();
+
+          if (!content || !session.socket?.connected || !session.joined) {
+            return;
+          }
+
+          stopTyping(session);
+          $(id(session, "send")).disabled = true;
+
+          session.socket.emit(
+            "message:send",
+            {
+              conversationId: conv(),
+              content,
+            },
+            (response) => {
+              $(id(session, "send")).disabled = false;
+
+              log("Message send acknowledgement", response);
+
+              if (!response?.success || !response.data) {
+                log(
+                  "Message send failed or acknowledgement shape differs from expected {success:true,data:message}.",
+                  response,
+                  "error",
+                );
+                return;
+              }
+
+              addMessage(session, response.data);
+
+              input.value = "";
+              input.focus();
+            },
+          );
+        }
+
+        // Delivery and read receipts.
+        function incoming(session, message) {
+          log(
+            "Live message received",
+            {
+              id: message?.id,
+              senderId: message?.sender_id,
+            },
+            "success",
+          );
+
+          const added = addMessage(session, message);
+
+          if (added && message.sender_id !== session.user.id) {
+            session.socket.emit(
+              "message:delivered",
+              { messageId: message.id },
+              (response) => log("Delivery acknowledgement", response),
+            );
+
+            session.socket.emit(
+              "conversation:read",
+              { conversationId: conv() },
+              (response) => {
+                if (response) {
+                  log("Read acknowledgement", response);
+                }
+              },
+            );
+          }
+        }
+
+        // Register Socket.IO listeners.
+        function register(session, socket) {
+          socket.on("connect", () => {
+            setConnected(session, true);
+
+            log(
+              `${session.user.username || "Account"} connected`,
+              { socketId: socket.id },
+              "success",
+            );
+
+            join(session);
+          });
+
+          socket.on("connect_error", (error) => {
+            setSync(session, "Connection error");
+            log("Socket connection error", error.message, "error");
+          });
+
+          socket.on("disconnect", (reason) => {
+            session.joined = false;
+            clearTimeout(session.typingTimer);
+
+            $(id(session, "typing")).textContent = "";
+
+            setConnected(session, false);
+
+            log(`${session.user.username || "Account"} disconnected`, reason);
+          });
+
+          socket.on("message:new", (message) => {
+            incoming(session, message);
+          });
+
+          socket.on("message:status", (data) => {
+            log("Message status event", data);
+
+            if (data?.status === "delivered") {
+              updateStatus(session, data.messageId, "delivered");
+            }
+          });
+
+          socket.on("messages:read", (data) => {
+            log("Read receipt event", data);
+
+            (data?.messageIds || []).forEach((messageId) => {
+              updateStatus(session, messageId, "read");
+            });
+          });
+
+          socket.on("typing:update", (data) => {
+            $(id(session, "typing")).textContent = data?.isTyping
+              ? `${peer(session).user?.username || data.username || "The other participant"} is typing…`
+              : "";
+
+            log("Typing event", data);
+          });
+
+          socket.on("presence:update", (data) => {
+            log("Presence event", data);
+
+            if (peer(session).user && data?.userId === peer(session).user.id) {
+              session.peerPresence = {
+                status: data.status,
+                lastSeenAt: data.lastSeenAt || null,
+              };
+
+              refreshPresence();
+            }
+          });
+        }
+
+        // Connect an account.
+        function connect(session) {
+          const tokenInput = $(
+            "token" + (session.key === "one" ? "One" : "Two"),
+          );
+
+          const token = tokenInput.value.trim();
+
+          if (!token) {
+            alert("Paste this account’s access token first.");
+            return;
+          }
+
+          const payload = decodeJwt(token);
+
+          if (!payload?.sub) {
+            alert(
+              "Token does not contain a readable JWT subject (sub). Paste a valid ScaleChat access token.",
+            );
+            return;
+          }
+
+          if (session.socket) {
+            if (session.socket.connected) return;
+
+            session.token = token;
+            session.socket.auth = { token };
+            session.socket.connect();
+
+            return;
+          }
+
+          session.token = token;
+          setIdentity(session, payload);
+
+          const socket = io(SERVER_URL, {
+            auth: { token },
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+          });
+
+          session.socket = socket;
+          register(session, socket);
+        }
+
+        function disconnect(session) {
+          if (!session.socket) return;
+
+          stopTyping(session);
+          session.socket.disconnect();
+
+          session.socket = null;
+          session.joined = false;
+
+          setConnected(session, false);
+
+          log(`${session.user?.username || "Account"} manually disconnected`);
+        }
+
+        function resetView() {
+          for (const session of Object.values(sessions)) {
+            session.messages.clear();
+            session.olderCursor = null;
+            session.hasOlder = false;
+            session.syncCursor = null;
+
+            empty(
+              session,
+              "Conversation changed",
+              "Reconnect this account to load the selected conversation.",
+            );
+
+            count(session);
+          }
+        }
+
+        // UI event listeners.
+        $("connectOne").onclick = () => connect(sessions.one);
+        $("connectTwo").onclick = () => connect(sessions.two);
+
+        $("disconnectOne").onclick = () => disconnect(sessions.one);
+        $("disconnectTwo").onclick = () => disconnect(sessions.two);
+
+        $("connectBoth").onclick = () => {
+          connect(sessions.one);
+          connect(sessions.two);
+        };
+
+        $("disconnectBoth").onclick = () => {
+          disconnect(sessions.one);
+          disconnect(sessions.two);
+        };
+
+        $("sendOne").onclick = () => send(sessions.one);
+        $("sendTwo").onclick = () => send(sessions.two);
+
+        $("composeOne").oninput = () => typing(sessions.one);
+        $("composeTwo").oninput = () => typing(sessions.two);
+
+        for (const session of Object.values(sessions)) {
+          $(id(session, "compose")).addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              send(session);
+            }
+          });
+        }
+
+        $("clearLogs").onclick = () => $("logs").replaceChildren();
+
+        $("conversationId").addEventListener("change", () => {
+          if (
+            Object.values(sessions).some((session) => session.socket?.connected)
+          ) {
+            alert(
+              "Disconnect both accounts before changing the conversation ID.",
+            );
+            return;
+          }
+
+          resetView();
         });
-      }
 
-      $("clearLogs").addEventListener("click", () =>
-        $("eventLogs").replaceChildren(),
-      );
+        // Optional backend health check.
+        async function health() {
+          try {
+            const response = await fetch(`${SERVER_URL}/api/v1/health`);
 
-      log("ScaleChat demo loaded");
-      log("Conversation ID", CONVERSATION_ID);
+            $("healthDot").className = "dot " + (response.ok ? "good" : "");
+
+            $("healthText").textContent = response.ok
+              ? "Backend reachable"
+              : "Backend responded; health route unavailable";
+          } catch {
+            $("healthDot").className = "dot bad";
+            $("healthText").textContent = "Backend not reachable";
+          }
+        }
+
+        health();
+
+        log("Playground ready.");
+
+        log(
+          "REST history: GET /api/v1/conversations/:conversationId/messages?limit=50",
+        );
+
+        log(
+          "Incremental sync: same endpoint with ?after=<base64url cursor>&limit=50",
+        );
+      })();
     </script>
   </body>
 </html>
