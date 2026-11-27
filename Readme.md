@@ -1,65 +1,53 @@
-# ScaleChat
+# ScaleChat Backend
 
-A scalable chat backend built with **Node.js, Express.js, and PostgreSQL**, following a modular monolith architecture.
+A real-time chat backend built with **Node.js, Express.js, PostgreSQL, and Socket.IO**. It follows a feature-based **Modular Monolith Architecture**, designed to keep the codebase maintainable, scalable, and easy to extend.
 
-ScaleChat focuses on building a reliable messaging system with secure authentication, efficient database operations, clean architecture, and real-time communication capabilities.
+## Features
 
-## 🚀 Features
+- User registration and login
+- Secure password hashing with bcrypt
+- JWT authentication with short-lived access tokens
+- Refresh token rotation and reuse detection
+- Protected API endpoints
+- Direct conversation creation and participant management
+- Prevention of duplicate direct conversations using database constraints
+- Cursor-based pagination for conversations and messages
+- Message persistence and history retrieval
+- Real-time messaging with Socket.IO
+- Typing indicators
+- Request validation using Zod
+- Centralized error handling
+- API rate limiting and structured logging
+- PostgreSQL connection pooling and database migrations
+- Graceful server shutdown
 
-### Implemented
+## Tech Stack
 
-- Modular monolith architecture with feature-based modules.
-- User registration and login.
-- Secure password hashing using bcrypt.
-- JWT-based authentication with short-lived access tokens.
-- Refresh token rotation and reuse detection.
-- Protected API routes and authentication middleware.
-- Direct conversation creation and participant management.
-- Prevention of duplicate direct conversations using PostgreSQL constraints.
-- Conversation listing with cursor-based pagination.
-- Request validation using Zod.
-- Centralized error handling.
-- API rate limiting.
-- Structured logging using Pino.
-- Graceful server shutdown.
-- PostgreSQL connection pooling.
-- Database migrations using node-pg-migrate.
+| Technology      | Purpose                    |
+| --------------- | -------------------------- |
+| Node.js         | Runtime                    |
+| JavaScript      | Programming language       |
+| Express.js      | REST API                   |
+| PostgreSQL      | Database                   |
+| `pg`            | PostgreSQL driver          |
+| Socket.IO       | Real-time communication    |
+| JWT             | Authentication             |
+| bcryptjs        | Password hashing           |
+| Zod             | Request validation         |
+| Pino            | Structured logging         |
+| Docker          | Local database environment |
+| node-pg-migrate | Database migrations        |
 
-### Planned
+## Architecture
 
-- Message creation and persistence.
-- Paginated message history.
-- Real-time messaging using Socket.IO.
-- Message delivery and read receipts.
-- Online user presence.
-- Automated integration testing.
-
-## 🛠️ Tech Stack
-
-| Technology      | Purpose                           |
-| --------------- | --------------------------------- |
-| Node.js         | Backend runtime                   |
-| JavaScript      | Programming language              |
-| Express.js      | REST API framework                |
-| PostgreSQL      | Relational database               |
-| pg              | PostgreSQL driver                 |
-| JWT             | Authentication                    |
-| bcryptjs        | Password hashing                  |
-| Zod             | Request validation                |
-| Socket.IO       | Real-time communication (planned) |
-| Pino            | Structured logging                |
-| Docker          | Local database environment        |
-| node-pg-migrate | Database migrations               |
-
-## 🏗️ Architecture
-
-ScaleChat follows a **Modular Monolith Architecture** with clear separation of responsibilities.
+ScaleChat uses a modular monolith with feature-based modules and clear separation of responsibilities.
 
 ```text
 src/
 ├── config/
 ├── infrastructure/
-│   └── database/
+│   ├── database/
+│   └── realtime/
 ├── shared/
 │   ├── errors/
 │   ├── middleware/
@@ -72,61 +60,25 @@ src/
     └── health/
 ```
 
-### Request Lifecycle
+Each feature contains its own business logic and supporting components.
+
+**Request flow:**
 
 ```text
-Client Request
-      |
-      v
+Client
+  ↓
 Routes & Middleware
-      |
-      v
+  ↓
 Controller
-      |
-      v
-Service Layer
-      |
-      v
-Repository Layer
-      |
-      v
+  ↓
+Service
+  ↓
+Repository
+  ↓
 PostgreSQL
 ```
 
-Each layer has a dedicated responsibility:
-
-- **Routes:** API endpoint definitions and middleware configuration.
-- **Controllers:** Handle HTTP requests and responses.
-- **Services:** Contain business logic and application rules.
-- **Repositories:** Handle database queries and persistence.
-- **Infrastructure:** Manage database connections and external integrations.
-- **Shared:** Reusable middleware, utilities, and error handling.
-
-## 🔐 Authentication & Security
-
-- Passwords are hashed using bcrypt.
-- Access tokens are short-lived JWTs.
-- Refresh tokens are generated using cryptographically secure randomness.
-- Only hashed refresh tokens are stored in PostgreSQL.
-- Refresh token rotation and reuse detection improve session security.
-- Protected routes verify JWT signatures and claims.
-- SQL queries use parameterized statements.
-- Authentication endpoints have rate limiting.
-- Sensitive information is redacted from application logs.
-
-## 🗄️ Database Design
-
-The core database entities include:
-
-- **Users:** Stores user account information.
-- **Conversations:** Stores direct and group conversation metadata.
-- **Conversation Participants:** Manages conversation membership.
-- **Messages:** Stores messages associated with conversations.
-- **Refresh Tokens:** Tracks token rotation, expiration, and revocation.
-
-PostgreSQL constraints, indexes, and transactions help maintain data integrity and support efficient queries.
-
-## ⚙️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -149,23 +101,23 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env` file:
+Create your local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure the required variables:
+Update `.env` with your configuration:
 
 ```env
 PORT=4000
 NODE_ENV=development
 DATABASE_URL=postgresql://scalechat:local_dev_password@localhost:5432/scalechat
-JWT_SECRET=your_secure_random_secret_at_least_32_characters
+JWT_SECRET=your_secure_secret_at_least_32_characters
 JWT_EXPIRES_IN=15m
 ```
 
-Never commit your `.env` file or production secrets.
+Generate a secure JWT secret for your local environment. Never commit `.env` or expose production credentials.
 
 ### 4. Start PostgreSQL
 
@@ -185,65 +137,64 @@ npm run db:migrate
 npm run dev
 ```
 
-The API runs on:
+The API will be available at:
 
-```text
-http://localhost:4000
-```
+`http://localhost:4000`
 
-## 📡 API Endpoints
+## API Endpoints
 
-Base URL: `/api/v1`
+Base path: `/api/v1`
 
-| Method | Endpoint                                  | Description                            |
-| ------ | ----------------------------------------- | -------------------------------------- |
-| POST   | `/auth/register`                          | Register a new user                    |
-| POST   | `/auth/login`                             | Authenticate a user                    |
-| POST   | `/auth/refresh`                           | Rotate refresh token                   |
-| POST   | `/auth/logout`                            | Revoke refresh token                   |
-| GET    | `/users/me`                               | Get authenticated user profile         |
-| POST   | `/conversations/direct`                   | Create or retrieve direct conversation |
-| GET    | `/conversations`                          | List user conversations                |
-| POST   | `/conversations/:conversationId/messages` | Send a message (planned)               |
-| GET    | `/conversations/:conversationId/messages` | Retrieve message history (planned)     |
+| Method | Endpoint                                  | Description                              |
+| ------ | ----------------------------------------- | ---------------------------------------- |
+| POST   | `/auth/register`                          | Register a user                          |
+| POST   | `/auth/login`                             | Log in                                   |
+| POST   | `/auth/refresh`                           | Refresh access token                     |
+| POST   | `/auth/logout`                            | Revoke refresh token                     |
+| GET    | `/users/me`                               | Get current user                         |
+| GET    | `/users/search`                           | Search users                             |
+| GET    | `/users/:userId`                          | Get public user profile                  |
+| POST   | `/conversations/direct`                   | Create or retrieve a direct conversation |
+| GET    | `/conversations`                          | List conversations                       |
+| POST   | `/conversations/:conversationId/messages` | Send a message                           |
+| GET    | `/conversations/:conversationId/messages` | Retrieve message history                 |
 
-Protected endpoints require a valid access token:
+Protected REST endpoints require a valid access token:
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-## 🧠 Key Engineering Decisions
+Real-time events are handled through the Socket.IO connection.
 
-- **Modular Monolith:** Keeps deployment simple while maintaining clear domain boundaries.
-- **Refresh Token Rotation:** Reduces the risk associated with compromised refresh tokens.
-- **Database Constraints:** Enforces data integrity at the database level, including duplicate conversation prevention.
-- **Transactions:** Ensures related database operations succeed or fail together.
-- **Cursor-Based Pagination:** Supports efficient retrieval of conversation lists as data grows.
-- **Connection Pooling:** Reuses database connections to reduce connection overhead.
+## Engineering Decisions
 
-## 🗺️ Roadmap
+- **Modular monolith:** Keeps deployment straightforward while maintaining clear feature boundaries.
+- **Refresh token rotation:** Helps detect token reuse and compromised sessions.
+- **Database constraints:** Enforces data integrity at the database level.
+- **Transactions:** Keeps related database operations consistent.
+- **Cursor-based pagination:** Supports efficient retrieval of growing conversation and message histories.
+- **Connection pooling:** Reuses database connections to reduce overhead.
+
+## Roadmap
 
 - [x] Project setup and modular architecture
-- [x] PostgreSQL integration
-- [x] Database migrations
-- [x] User authentication
-- [x] JWT access and refresh tokens
-- [x] Refresh token rotation and reuse detection
+- [x] PostgreSQL integration and migrations
+- [x] Authentication and refresh token rotation
 - [x] Direct conversations
 - [x] Conversation listing and pagination
-- [ ] Message persistence
-- [ ] Message history pagination
-- [ ] Real-time messaging with Socket.IO
-- [ ] Message delivery and read receipts
-- [ ] Online presence
-- [ ] Automated integration testing
-- [ ] Performance and load testing
+- [x] Message persistence and history pagination
+- [x] Socket.IO authentication and real-time messaging
+- [x] Typing indicators
+- [x] Complete delivery and read receipt verification
+- [x] Complete presence and last-seen verification
+- [x] Automated integration testing
+- [x] Performance and load testing
 
-## 📌 Project Status
+## Project Status
 
-ScaleChat is actively under development. The current focus is building a solid backend foundation before introducing real-time messaging and advanced chat features.
+ScaleChat is actively under development. The backend foundation and core messaging functionality are in place, with frontend development and further reliability improvements planned.
 
-## 📄 License
+## License
 
 No open-source license has been added yet.
