@@ -12,7 +12,13 @@ const app = express();
 
 // Global middlewares
 app.use(requestLogger);
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 //Routes
